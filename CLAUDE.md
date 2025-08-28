@@ -11,6 +11,12 @@
 4. **Korean support**: Full Korean language support in all interactions
 5. **Tool optimization**: Use multiple tools efficiently in single responses
 
+### Project Status Tracking
+6. **Auto-check projects**: When user asks about projects or seems lost, automatically read and display PROJECTS.md
+7. **Project file location**: `C:\Users\sintt\PROJECTS.md`
+8. **Common triggers**: "프로젝트 현황", "어디서부터", "뭐 하고 있었지", "project status", "what was I working on"
+9. **Always suggest next steps**: Based on current project status, provide actionable next steps
+
 ---
 
 ## Obsidian Vault Access
