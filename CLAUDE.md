@@ -17,6 +17,13 @@
 8. **Common triggers**: "프로젝트 현황", "어디서부터", "뭐 하고 있었지", "project status", "what was I working on"
 9. **Always suggest next steps**: Based on current project status, provide actionable next steps
 
+### Universal Search System
+10. **Auto-search**: When user asks about finding files or information, automatically search across all locations
+11. **Search locations**: Current directory, Obsidian vault (`X:\ms\Logan`), project folders, git history
+12. **Common triggers**: "어디 저장했지", "찾아줘", "뭔가 했었는데", "파일 있나", "search", "find"
+13. **Search methods**: Use Grep for content, Glob for filenames, LS for directory browsing
+14. **Smart suggestions**: Offer related files and alternative search terms based on partial matches
+
 ---
 
 ## Obsidian Vault Access
