@@ -1,5 +1,18 @@
 # Claude Code Configuration
 
+## 🚀 Session Startup Rules
+
+**IMPORTANT**: Always display project status dashboard immediately when Claude Code session starts, without waiting for user request.
+
+### Startup Display Rules
+1. **Always show** Current Projects Status first thing in every new session
+2. **Display** progress bars and completion status
+3. **Include** next steps and awaiting tasks
+4. **Format** with emojis and visual progress indicators
+5. **No user prompt required** - show automatically
+
+---
+
 ## 📋 Current Projects Status
 
 ### 1. 📊 Crypto Information Collection Project
