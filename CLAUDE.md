@@ -15,47 +15,47 @@
 
 ## 📋 Current Projects Status
 
-### 1. 📊 Crypto Information Collection Project
-**Status**: ✅ **COMPLETED (100%)**
+### 1. 📊 크립토 정보 수집 프로젝트 (Crypto Information Collection Project)
+**상태**: ✅ **완료 (100%)**
 ```
-Progress: ████████████████████████████████████████ 100%
+진행률: ████████████████████████████████████████ 100%
 ```
-- **Goal**: Systematic collection and analysis of cryptocurrency trading insights
-- **Data Sources**: YouTube channel analysis (Puzzle channel)  
-- **Results**: 382 videos → 67 high-quality insights extracted
-- **Categories**: Technical analysis, investment strategy, market analysis, practical trading
-- **Location**: `X:\ms\Logan\🔗 AI인사이트\📊 크립토 정보 수집 프로젝트\`
-- **Next Phase**: Program development based on collected insights
+- **목표**: 암호화폐 거래 인사이트의 체계적 수집 및 분석
+- **데이터 소스**: YouTube 채널 분석 (퍼즐 채널)  
+- **결과**: 382개 영상 → 67개 고품질 인사이트 추출
+- **카테고리**: 기술분석, 투자전략, 시장분석, 실전매매
+- **위치**: `X:\ms\Logan\🔗 AI인사이트\📊 크립토 정보 수집 프로젝트\`
+- **다음 단계**: 수집된 인사이트 기반 프로그램 개발
 
-### 2. 🔧 YouTube Analysis Automation System  
-**Status**: ✅ **COMPLETED (100%)**
+### 2. 🔧 YouTube 분석 자동화 시스템 (YouTube Analysis Automation System)  
+**상태**: ✅ **완료 (100%)**
 ```
-Progress: ████████████████████████████████████████ 100%
+진행률: ████████████████████████████████████████ 100%
 ```
-- **Goal**: Automated bulk analysis of YouTube channel content
-- **Features**: Script download, content filtering, categorization, prioritization
-- **Tools**: yt-dlp + Python analysis pipeline
-- **Success Rate**: 382 videos processed, 50 priority insights extracted
-- **Integration**: Obsidian-compatible markdown output
+- **목표**: YouTube 채널 콘텐츠 대량 자동 분석
+- **기능**: 스크립트 다운로드, 내용 필터링, 분류, 우선순위 설정
+- **도구**: yt-dlp + Python 분석 파이프라인
+- **성공률**: 382개 영상 처리, 50개 우선순위 인사이트 추출
+- **통합**: 옵시디언 호환 마크다운 출력
 
-### 3. 💻 Program Development Pipeline
-**Status**: 🔄 **READY TO START (0%)**
+### 3. 💻 프로그램 개발 파이프라인 (Program Development Pipeline)
+**상태**: 🔄 **시작 준비 완료 (0%)**
 ```
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
+진행률: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
 ```
-- **Goal**: Build cryptocurrency trading program using collected insights
-- **Resources**: 67 analyzed trading strategies and market insights
-- **Phase**: Awaiting user direction for implementation
-- **Potential Features**: Trading signals, portfolio management, risk analysis
+- **목표**: 수집된 인사이트를 활용한 암호화폐 거래 프로그램 구축
+- **리소스**: 67개 분석된 거래 전략 및 시장 인사이트
+- **단계**: 구현을 위한 사용자 지시 대기 중
+- **잠재적 기능**: 거래 신호, 포트폴리오 관리, 리스크 분석
 
-### 4. ⚙️ Auto-Commit System
-**Status**: ✅ **COMPLETED (100%)**  
+### 4. ⚙️ 자동 커밋 시스템 (Auto-Commit System)
+**상태**: ✅ **완료 (100%)**  
 ```
-Progress: ████████████████████████████████████████ 100%
+진행률: ████████████████████████████████████████ 100%
 ```
-- **Goal**: Automatic git commits for CLAUDE.md updates
-- **Implementation**: Built-in workflow for seamless updates
-- **Status**: Active and functional
+- **목표**: CLAUDE.md 업데이트 시 자동 git 커밋
+- **구현**: 원활한 업데이트를 위한 내장 워크플로우
+- **상태**: 활성화 및 정상 작동
 
 ## Obsidian Vault Access
 
