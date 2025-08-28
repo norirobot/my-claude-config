@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>localStorage 클리어</title>
+</head>
+<body>
+    <h1>localStorage 클리어 도구</h1>
+    <button onclick="clearStorage()">localStorage 전체 삭제</button>
+    <button onclick="clearStudentCode()">학생 코드만 삭제</button>
+    <div id="result"></div>
+
+    <script>
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('result').innerHTML = '✅ localStorage 전체 삭제 완료';
+        }
+
+        function clearStudentCode() {
+            const keys = Object.keys(localStorage);
+            let deletedCount = 0;
+            
+            keys.forEach(key => {
+                if (key.includes('student_') && key.includes('_code')) {
+                    localStorage.removeItem(key);
+                    deletedCount++;
+                }
+            });
+            
+            document.getElementById('result').innerHTML = `✅ 학생 코드 ${deletedCount}개 삭제 완료`;
+        }
+    </script>
+</body>
+</html>

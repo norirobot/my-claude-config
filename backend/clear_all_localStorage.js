@@ -1,0 +1,21 @@
+// 모든 localStorage 데이터 삭제 코드
+console.log('=== 모든 localStorage 데이터 삭제 ===');
+console.log('브라우저 콘솔에서 다음 코드를 실행하세요:');
+console.log('');
+console.log('// 최문석 (ID: 22) 모든 데이터 삭제');
+console.log('Object.keys(localStorage).forEach(key => {');
+console.log('    if (key.includes("student_22")) {');
+console.log('        console.log("삭제:", key);');
+console.log('        localStorage.removeItem(key);');
+console.log('    }');
+console.log('});');
+console.log('');
+console.log('// 또는 모든 코딩 관련 localStorage 삭제');
+console.log('Object.keys(localStorage).forEach(key => {');
+console.log('    if (key.includes("_code") || key.includes("_problem") || key.includes("student_")) {');
+console.log('        console.log("삭제:", key);');
+console.log('        localStorage.removeItem(key);');
+console.log('    }');
+console.log('});');
+console.log('');
+console.log('그 다음 F5로 새로고침하세요!');
