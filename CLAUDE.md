@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🏠 Home PC Setup Completed - 2025-09-02
+- SSH 키 설정 완료
+- GitHub 연동 성공
+- 자동 동기화 준비 완료
+
 # Claude Code Configuration
 
 ## 🚀 Session Startup Rules
