@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import Editor from '@monaco-editor/react';
-import BlocklyEditor from './BlocklyEditor';
+// import BlocklyEditor from './BlocklyEditor';
 import GameMap from './GameMap';
 import Login from './Login';
 import AdminPanel from './AdminPanel';
@@ -950,6 +950,43 @@ const CodingMentoringPlatform = () => {
   console.log('🚀 CodingMentoringPlatform 컴포넌트 시작됨');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [userType, setUserType] = useState(null);
+  const [currentTab, setCurrentTab] = useState('mentor');
+  const [selectedClass, setSelectedClass] = useState('전체');
+  const [sortBy, setSortBy] = useState('studentId');
+  const [code, setCode] = useState('');
+  const [isRestoringState, setIsRestoringState] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [problemCodes, setProblemCodes] = useState({});
+  const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [output, setOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showEditStudent, setShowEditStudent] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [problems, setProblems] = useState([]);
+  const [selectedProblem, setSelectedProblem] = useState(null);
+  const [currentLesson, setCurrentLesson] = useState(1);
+  const [problemStatus, setProblemStatus] = useState({});
+  const [lessons, setLessons] = useState([]);
+  const [latestFeedback, setLatestFeedback] = useState({});
+  const [fontSize, setFontSize] = useState(14);
+  const [submittingProblems, setSubmittingProblems] = useState(new Set());
+  const [lastUpdateTime, setLastUpdateTime] = useState({});
+  const [lastUpdateContent, setLastUpdateContent] = useState({});
+  const [helpRequests, setHelpRequests] = useState([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [liveMessages, setLiveMessages] = useState([]);
+  const [liveMessageInput, setLiveMessageInput] = useState('');
+  const [sentMessages, setSentMessages] = useState([]);
+  const [originalCode, setOriginalCode] = useState('');
+  const [codeModifications, setCodeModifications] = useState([]);
+  const [hasModifications, setHasModifications] = useState(false);
+  const [socket, setSocket] = useState(null);
+
+  const classOptions = ['전체', '월요일반', '화요일반', '수요일반', '목요일반', '금요일반', '토요일반'];
 
   // 로그인 체크
   useEffect(() => {
@@ -963,108 +1000,10 @@ const CodingMentoringPlatform = () => {
         setIsLoggedIn(true);
       } catch (error) {
         localStorage.removeItem('token');
-        localStorage.removeUser('user');
+        localStorage.removeItem('user');
       }
     }
   }, []);
-
-  const handleLogin = (userData) => {
-    setUser(userData);
-    setIsLoggedIn(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setIsLoggedIn(false);
-  };
-
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  if (user.role === 'admin') {
-    return (
-      <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          padding: '10px 20px',
-          backgroundColor: '#f5f5f5',
-          borderBottom: '1px solid #ddd'
-        }}>
-          <h1>코딩 멘토 - 관리자</h1>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            로그아웃
-          </button>
-        </div>
-        <AdminPanel user={user} />
-      </div>
-    );
-  }
-
-  if (user.role === 'student') {
-    return <StudentDashboard user={user} />;
-  }
-
-  const [userType, setUserType] = useState(null);
-  const [currentTab, setCurrentTab] = useState('mentor');
-  const [selectedClass, setSelectedClass] = useState('전체');
-  const [sortBy, setSortBy] = useState('studentId'); // 'studentId' 또는 'name'
-  const [code, setCode] = useState(''); // 현재 선택된 문제의 코드
-  const [isRestoringState, setIsRestoringState] = useState(false); // 상태 복원 중인지 여부 - 임시 비활성화
-  const [hasInitialized, setHasInitialized] = useState(false); // 초기화 완료 여부
-  const [problemCodes, setProblemCodes] = useState({}); // 문제별 코드 저장
-  
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [output, setOutput] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [showAddStudent, setShowAddStudent] = useState(false);
-  const [showEditStudent, setShowEditStudent] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
-  
-  // 문제 관련 상태
-  const [problems, setProblems] = useState([]);
-  const [selectedProblem, setSelectedProblem] = useState(null);
-  const [currentLesson, setCurrentLesson] = useState(1);
-  const [problemStatus, setProblemStatus] = useState({}); // 문제별 해결 상태
-  const [lessons, setLessons] = useState([]); // 차시 목록
-  const [latestFeedback, setLatestFeedback] = useState({}); // 최신 피드백
-  const [fontSize, setFontSize] = useState(14); // 코드 에디터 폰트 크기
-  const [submittingProblems, setSubmittingProblems] = useState(new Set()); // 제출 중인 문제들
-  const [lastUpdateTime, setLastUpdateTime] = useState({}); // 마지막 업데이트 시간 추적
-  const [lastUpdateContent, setLastUpdateContent] = useState({}); // 마지막 업데이트 내용 추적
-  
-  // 도움 요청 시스템
-  const [helpRequests, setHelpRequests] = useState([]); // 도움 요청 목록
-  const [showHelpModal, setShowHelpModal] = useState(false); // 도움 요청 모달 표시
-  
-  // 실시간 메시지 시스템
-  const [liveMessages, setLiveMessages] = useState([]); // 학생이 받은 실시간 메시지들
-  const [liveMessageInput, setLiveMessageInput] = useState(''); // 관리자의 메시지 입력
-  const [sentMessages, setSentMessages] = useState([]); // 관리자가 보낸 메시지들
-  
-  // 코드 수정사항 시스템
-  const [originalCode, setOriginalCode] = useState(''); // 원본 코드 (수정 전)
-  const [codeModifications, setCodeModifications] = useState([]); // 받은 코드 수정사항들
-  const [hasModifications, setHasModifications] = useState(false); // 수정사항이 있는지 여부
-  const [socket, setSocket] = useState(null); // 소켓을 state로 관리
-
-  const classOptions = ['전체', '월요일반', '화요일반', '수요일반', '목요일반', '금요일반', '토요일반'];
 
   // 소켓 초기화
   useEffect(() => {
@@ -2963,10 +2902,7 @@ const CodingMentoringPlatform = () => {
     return stats;
   };
 
-  // 로그인 화면
-  if (!isLoggedIn) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
+  // 로그인 체크 (render에서 처리)
 
   const classStats = userType === 'admin' && currentTab === 'mentor' ? getClassStats() : {};
 
@@ -2997,6 +2933,11 @@ const CodingMentoringPlatform = () => {
     });
     return lessonScore;
   };
+
+  // 로그인 체크
+  if (!isLoggedIn) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
@@ -3055,19 +2996,6 @@ const CodingMentoringPlatform = () => {
                     }}
                   >
                     👁️ 학생 뷰
-                  </button>
-                  <button
-                    onClick={() => setCurrentTab('blocks')}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: currentTab === 'blocks' ? '#2563eb' : '#f3f4f6',
-                      color: currentTab === 'blocks' ? 'white' : '#374151',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🧩 블록코딩
                   </button>
                   <button
                     onClick={() => setCurrentTab('game')}
@@ -3244,9 +3172,6 @@ const CodingMentoringPlatform = () => {
             onEditLesson={editLesson}
             onDeleteLesson={deleteLesson}
           />
-        ) : userType === 'admin' && currentTab === 'blocks' ? (
-          /* 블록 코딩 에디터 */
-          <BlocklyEditor />
         ) : userType === 'admin' && currentTab === 'game' ? (
           /* 게임맵 인터페이스 */
           <GameMap user={user} userType={userType} />
@@ -4728,10 +4653,87 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
       lastChangeTimeRef.current = Date.now();
       console.log('⌨️ 키보드 입력 감지:', e.code);
       
-      // 실제 문자 입력 시 플레이스홀더 즉시 삭제
-      if (e.code && !e.code.startsWith('Arrow') && !e.code.startsWith('Control') && 
-          e.code !== 'Shift' && e.code !== 'Alt' && e.code !== 'Tab') {
+      // 실제 문자 입력 키인지 확인 (화살표, 수정자 키 제외)
+      const isCharacterKey = e.code && 
+        !e.code.startsWith('Arrow') && 
+        !e.code.startsWith('Control') && 
+        !e.code.startsWith('Meta') &&
+        e.code !== 'Shift' && 
+        e.code !== 'Alt' && 
+        e.code !== 'Tab' &&
+        e.code !== 'CapsLock' &&
+        e.code !== 'Escape' &&
+        e.code !== 'Home' &&
+        e.code !== 'End' &&
+        e.code !== 'PageUp' &&
+        e.code !== 'PageDown' &&
+        e.code !== 'F1' && !e.code.startsWith('F');
+      
+      if (isCharacterKey) {
+        console.log('🔤 문자 입력 키 감지:', e.code);
         
+        // 즉시 플레이스홀더 확인 및 삭제 (setTimeout 제거)
+        const model = editor.getModel();
+        if (model) {
+          const currentValue = model.getValue();
+          const standardPlaceholder = '// 여기에 코드를 입력하세요';
+          
+          if (currentValue.includes(standardPlaceholder)) {
+            console.log('🎯 타이핑 전 플레이스홀더 즉시 삭제');
+            
+            // 현재 커서 위치 저장
+            const currentPosition = editor.getPosition();
+            console.log('📍 현재 커서 위치:', currentPosition);
+            
+            // 플레이스홀더 위치 찾기
+            const lines = currentValue.split('\n');
+            let placeholderLine = -1;
+            let placeholderColumn = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+              const placeholderIndex = lines[i].indexOf(standardPlaceholder);
+              if (placeholderIndex !== -1) {
+                placeholderLine = i + 1;
+                placeholderColumn = placeholderIndex + 1;
+                break;
+              }
+            }
+            
+            // 플레이스홀더 삭제
+            const newValue = currentValue.replace(standardPlaceholder, '');
+            model.setValue(newValue);
+            
+            // 커서 위치 복구 - 플레이스홀더가 있던 위치 또는 원래 위치
+            let targetPosition = currentPosition;
+            if (placeholderLine !== -1 && currentPosition && 
+                currentPosition.lineNumber === placeholderLine &&
+                currentPosition.column >= placeholderColumn &&
+                currentPosition.column <= placeholderColumn + standardPlaceholder.length) {
+              // 플레이스홀더 내부에 커서가 있었다면 플레이스홀더 시작점으로
+              targetPosition = { lineNumber: placeholderLine, column: placeholderColumn };
+            }
+            
+            if (targetPosition) {
+              editor.setPosition(targetPosition);
+              console.log('🎯 커서 위치 복구:', targetPosition);
+            }
+            
+            console.log('✨ 플레이스홀더 즉시 삭제 완료');
+          }
+        }
+      }
+    });
+    
+    editor.onMouseDown((e) => {
+      isTypingRef.current = false;
+      console.log('🖱️ 마우스 클릭 감지');
+      
+      // 클릭 위치 저장 (placeholder 삭제 후 커서 위치 복구용)
+      const clickPosition = e.target.position;
+      if (clickPosition) {
+        console.log('📍 클릭 위치 저장:', clickPosition);
+        
+        // placeholder 클릭 감지를 위한 딜레이 후 처리
         setTimeout(() => {
           const model = editor.getModel();
           if (model) {
@@ -4739,25 +4741,45 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
             const standardPlaceholder = '// 여기에 코드를 입력하세요';
             
             if (currentValue.includes(standardPlaceholder)) {
-              console.log('🎯 표준 플레이스홀더 발견, 즉시 삭제');
+              console.log('🎯 플레이스홀더 클릭 감지, 삭제 후 커서 위치 복구');
               
-              // 직접 모델 값 설정 - 커서 위치 유지됨
-              const currentPosition = editor.getPosition();
+              // 플레이스홀더가 있는 줄 찾기
+              const lines = currentValue.split('\n');
+              let placeholderLine = -1;
+              let placeholderColumn = 0;
+              
+              for (let i = 0; i < lines.length; i++) {
+                const placeholderIndex = lines[i].indexOf(standardPlaceholder);
+                if (placeholderIndex !== -1) {
+                  placeholderLine = i + 1; // Monaco는 1-based
+                  placeholderColumn = placeholderIndex + 1; // Monaco는 1-based
+                  break;
+                }
+              }
+              
+              // 플레이스홀더 삭제
               const newValue = currentValue.replace(standardPlaceholder, '');
               model.setValue(newValue);
-              if (currentPosition) {
-                editor.setPosition(currentPosition);
+              
+              // 커서 위치 복구 - 플레이스홀더 위치 또는 클릭 위치 중 적절한 곳에
+              let targetPosition;
+              if (placeholderLine !== -1 && 
+                  clickPosition.lineNumber === placeholderLine && 
+                  clickPosition.column >= placeholderColumn && 
+                  clickPosition.column <= placeholderColumn + standardPlaceholder.length) {
+                // 플레이스홀더 내부를 클릭했다면 플레이스홀더 시작 위치로
+                targetPosition = { lineNumber: placeholderLine, column: placeholderColumn };
+              } else {
+                // 다른 곳을 클릭했다면 원래 클릭 위치 유지
+                targetPosition = clickPosition;
               }
-              console.log('✨ 표준 플레이스홀더 삭제 완료');
+              
+              console.log('🎯 커서 위치 설정:', targetPosition);
+              editor.setPosition(targetPosition);
             }
           }
         }, 10);
       }
-    });
-    
-    editor.onMouseDown(() => {
-      isTypingRef.current = false;
-      console.log('🖱️ 마우스 클릭 감지');
     });
     
     // 추가 이벤트들에서도 C언어 설정 유지

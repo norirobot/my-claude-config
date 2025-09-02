@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import BlocklyEditor from './BlocklyEditor';
+// import BlocklyEditor from './BlocklyEditor';
 import AssessmentReport from './AssessmentReport';
 
 const GameMap = ({ user, userType }) => {
@@ -390,16 +390,10 @@ const GameMap = ({ user, userType }) => {
 
         {/* 블록 에디터 */}
         <div style={{ flex: 1 }}>
-          <BlocklyEditor 
-            allowedBlocks={selectedLevel.blocks}
-            onCodeComplete={(code) => {
-              // 코드 검증 및 별점 계산
-              if (selectedLevel.targetCode && code.includes(selectedLevel.targetCode)) {
-                completeLevel(selectedLevel, selectedLevel.chapterIndex, selectedLevel.levelIndex, 3);
-                alert('🎉 완벽해요! ⭐⭐⭐');
-              }
-            }}
-          />
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h3>블록 에디터가 비활성화되었습니다</h3>
+            <p>게임맵 기능을 사용하려면 블록 에디터가 필요합니다.</p>
+          </div>
         </div>
       </div>
     );

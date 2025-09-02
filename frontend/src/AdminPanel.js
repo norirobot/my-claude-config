@@ -114,7 +114,7 @@ const AdminPanel = ({ user }) => {
   };
 
   const handleDeleteStudent = async (studentId) => {
-    if (!confirm('정말로 이 학생을 삭제하시겠습니까?')) return;
+    if (!window.confirm('정말로 이 학생을 삭제하시겠습니까?')) return;
 
     try {
       const response = await fetch(`http://localhost:3001/api/admin/students/${studentId}`, {

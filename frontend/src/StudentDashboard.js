@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import GameMap from './GameMap';
-import BlocklyEditor from './BlocklyEditor';
+// import BlocklyEditor from './BlocklyEditor';
 import AssessmentReport from './AssessmentReport';
 
 const StudentDashboard = ({ user }) => {
@@ -105,15 +105,7 @@ const StudentDashboard = ({ user }) => {
     );
   };
 
-  const handleAssessmentComplete = (assessmentData) => {
-    saveAssessmentResult(
-      assessmentData.type,
-      assessmentData.name,
-      assessmentData.score,
-      assessmentData.maxScore,
-      assessmentData.details
-    );
-  };
+  // handleAssessmentComplete 사용하지 않음
 
   const renderGameMap = () => (
     <GameMap
@@ -121,49 +113,11 @@ const StudentDashboard = ({ user }) => {
       onLevelComplete={handleLevelComplete}
       onLevelSelect={(level) => {
         setCurrentLevel(level);
-        setActiveTab('blockly');
+        // 블록코딩 비활성화됨
       }}
     />
   );
 
-  const renderBlocklyEditor = () => (
-    <div style={{ height: '100vh' }}>
-      <div style={{ 
-        padding: '10px 20px', 
-        backgroundColor: '#f5f5f5', 
-        borderBottom: '1px solid #ddd',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div>
-          <h3 style={{ margin: 0 }}>
-            {currentLevel ? `${currentLevel.title} - ${currentLevel.description}` : '블록 코딩'}
-          </h3>
-        </div>
-        <button
-          onClick={() => setActiveTab('gameMap')}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          게임 맵으로 돌아가기
-        </button>
-      </div>
-      <BlocklyEditor 
-        allowedBlocks={currentLevel?.allowedBlocks}
-        onCodeComplete={(code) => {
-          // 코드 완성시 처리
-          console.log('코드 완성:', code);
-        }}
-      />
-    </div>
-  );
 
   const renderAssessments = () => {
     const latestAssessment = assessments[0];
@@ -377,7 +331,6 @@ const StudentDashboard = ({ user }) => {
       <div style={{ borderBottom: '1px solid #ddd' }}>
         {[
           { key: 'gameMap', label: '게임 맵', icon: '🗺️' },
-          { key: 'blockly', label: '블록 코딩', icon: '🧩' },
           { key: 'assessments', label: '평가 결과', icon: '📊' },
           { key: 'progress', label: '진도 현황', icon: '📈' }
         ].map(tab => (
@@ -402,7 +355,6 @@ const StudentDashboard = ({ user }) => {
       {/* 탭 컨텐츠 */}
       <div>
         {activeTab === 'gameMap' && renderGameMap()}
-        {activeTab === 'blockly' && renderBlocklyEditor()}
         {activeTab === 'assessments' && renderAssessments()}
         {activeTab === 'progress' && renderProgress()}
       </div>
