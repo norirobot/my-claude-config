@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Claude Code Configuration
 
 ## 🚀 Session Startup Rules
@@ -251,3 +255,96 @@ npm run
 - **번들 크기**: 불필요한 dependency 추가로 인한 크기 증가 방지  
 - **메모리 사용량**: 메모리 누수 가능성 있는 코드 패턴 제거
 - **실행 속도**: 성능 저하 없는지 간단한 벤치마크 확인
+
+---
+
+## 💻 프로젝트별 개발 명령어
+
+### English Learning Tutor App
+**위치**: `C:\Users\sintt\english-learning-tutor-app\`
+
+#### 개발 서버 실행
+```bash
+cd english-learning-tutor-app
+npm start                    # 프로덕션 서버 시작
+npm run dev                  # 개발 서버 (nodemon 사용)
+```
+
+#### 테스트 및 빌드
+```bash
+npm test                     # Jest 테스트 실행
+npm run build                # 클라이언트 + 서버 빌드
+```
+
+#### 웹 앱 접속
+- **메인 서비스**: http://localhost:3000
+- **웹 앱 버전**: http://localhost:3000/web-app/
+
+### Python 스크립트 실행
+
+#### YouTube 분석 도구
+```bash
+python simple_analysis.py          # YouTube 자막 자동 분석
+```
+
+#### 크립토 분석 도구들
+```bash
+python auto_crypto_analysis.py     # 자동 크립토 분석
+python upbit_rsi_monitor.py        # Upbit RSI 모니터링
+```
+
+#### 출결 알림 시스템
+```bash
+cd attendance_notifier
+python run.py                # 출결 알림 프로그램 실행
+python test_app.py          # 테스트 모드 실행
+```
+
+---
+
+## 🗂️ 주요 프로젝트 구조
+
+### English Learning Tutor App
+```
+english-learning-tutor-app/
+├── backend/          # Express.js 백엔드 서버
+├── frontend/         # React Native 모바일 앱
+├── web-app/          # 웹 버전 (HTML/CSS/JS)
+├── ai-service/       # OpenAI API 연동 서비스
+├── database/         # SQLite 데이터베이스 스키마
+└── docs/             # 프로젝트 문서들
+```
+
+### 루트 디렉토리 주요 파일
+```
+C:\Users\sintt\
+├── simple_analysis.py          # YouTube 분석 자동화
+├── auto_crypto_analysis.py     # 크립토 분석 도구
+├── upbit_rsi_monitor.py        # RSI 모니터링
+├── attendance_notifier/        # 출결 알림 시스템
+├── PROJECTS.md                 # 프로젝트 현황 관리
+└── CLAUDE.md                   # Claude Code 설정
+```
+
+---
+
+## 🔧 개발 워크플로우
+
+### 새 프로젝트 시작시
+1. **프로젝트 현황 확인**: "프로젝트 현황" 명령어로 현재 상태 파악
+2. **기존 코드 패턴 분석**: 유사 프로젝트 3개 이상 Read 도구로 분석
+3. **기술스택 확인**: package.json, requirements.txt 등 종속성 파악
+4. **개발 환경 설정**: 필요한 도구 및 서버 실행
+
+### 코드 작성 프로세스
+1. **요구사항 명확화** → 한 줄로 정리
+2. **기존 패턴 분석** → 네이밍, 구조, 스타일 학습  
+3. **테스트 우선 작성** → TDD 방식 강제 적용
+4. **최소 구현** → 테스트 통과하는 최소 코드
+5. **검증 실행** → lint, test, build 모든 단계 통과
+6. **리팩토링** → 코드 품질 개선
+
+### 프로젝트 완료시
+1. **PROJECTS.md 업데이트** → 진행률 및 완료 상태 반영
+2. **문서 정리** → README.md, 가이드 문서 최신화
+3. **Git 커밋** → 자동 커밋 시스템으로 변경사항 저장
