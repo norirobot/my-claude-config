@@ -13,6 +13,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: Claude Code startup behavior and interaction rules.
 
+### 🔄 Startup Auto-Check
+**MANDATORY**: Every session start, automatically check for updates
+1. **Always check git status first** - `git status` to see if changes exist
+2. **Auto-pull if behind** - `git pull origin master` if remote has updates  
+3. **Notify user of changes** - Show what files were updated from other PC
+4. **Check requirements.txt** - Alert if new Python packages need installation
+
 ### General Behavior Rules
 1. **Concise responses**: Keep answers brief and direct unless detail requested
 2. **Proactive assistance**: Suggest helpful tools and methods automatically  
