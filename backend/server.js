@@ -1,3 +1,4 @@
+require('dotenv').config(); // .env 파일 읽기
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -39,22 +40,71 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080", "http://192.168.68.55:3001", "http://192.168.68.55:3000", "http://192.168.68.55:8080"],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      const localNetworkRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+      if (localNetworkRegex.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
 });
 
-// 미들웨어 설정
-app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080", "http://192.168.68.55:3001", "http://192.168.68.55:3000", "http://192.168.68.55:8080"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+// 미들웨어 설정 - 동적 CORS 설정
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost on any port
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow any local network IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const localNetworkRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+    if (localNetworkRegex.test(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Rate limiting middleware
 app.use(rateLimit);
+
+// 루트 경로 핸들러 추가 (CORS 및 미들웨어 설정 후)
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '코딩 멘토 백엔드 서버가 정상 작동 중입니다.', 
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 3001,
+    ip: req.ip,
+    host: req.get('host')
+  });
+});
+
+// 인증 라우트 추가
+const { router: authRouter } = require('./routes/auth');
+const adminRouter = require('./routes/admin');
+const studentRouter = require('./routes/student');
+
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);  
+app.use('/api/student', studentRouter);
 
 // 모든 요청 로깅 미들웨어
 app.use((req, res, next) => {
@@ -357,89 +407,57 @@ async function executeCCodeWithInput(code, inputData = null) {
     // 변수 선언 파싱
     parseVariableDeclarations(code);
     
-    // scanf 문 찾기
+    // printf와 scanf 문 찾기
+    const printfStatements = extractPrintfStatements(code);
     const scanfStatements = extractScanfStatements(code);
     
     // scanf가 있는데 입력 데이터가 없으면 입력 요청
     if (scanfStatements.length > 0 && !inputData) {
-      console.log('📥 scanf 발견, 입력 필요:', scanfStatements);
-      
-      // scanf 이전의 printf 문에서 입력 프롬프트 추출
-      const printfStatements = extractPrintfStatements(code);
-      let printfIndex = 0;
-      
-      scanfStatements.forEach((stmt, index) => {
-        const formatSpecifiers = extractFormatSpecifiers(stmt);
-        formatSpecifiers.forEach(spec => {
-          let prompt = '';
-          
-          // scanf 이전에 printf가 있으면 그것을 프롬프트로 사용
-          if (printfIndex < printfStatements.length) {
-            const printfStmt = printfStatements[printfIndex];
-            const printfText = extractPrintfText(printfStmt);
-            if (printfText && printfText.trim()) {
-              prompt = printfText.trim();
-              printfIndex++;
-            }
-          }
-          
-          // printf가 없거나 텍스트가 없으면 기본 프롬프트 사용
-          if (!prompt) {
-            if (spec === '%d') prompt = '정수를 입력하세요:';
-            else if (spec === '%f') prompt = '실수를 입력하세요:';
-            else if (spec === '%c') prompt = '문자를 입력하세요:';
-            else if (spec === '%s') prompt = '문자열을 입력하세요:';
-            else prompt = '값을 입력하세요:';
-          }
-          
-          inputPrompts.push(prompt);
-        });
-      });
-      
       return { 
         success: false, 
         needsInput: true, 
-        inputPrompts: [...inputPrompts] // 배열 복사로 circular reference 방지
+        inputPrompts: [''] // 빈 프롬프트 - 입력만 받기
       };
     }
     
-    // scanf 처리 (입력 데이터가 있는 경우)
-    if (scanfStatements.length > 0 && inputData) {
-      console.log('📝 scanf 실행 중:', { scanfStatements, inputData });
-      let inputIndex = 0;
-      
-      for (const stmt of scanfStatements) {
-        const result = executeScanf(stmt, inputData, inputIndex);
-        if (result.error) {
-          return { success: false, output: result.error };
-        }
-        inputIndex = result.nextInputIndex;
-      }
-    }
+    // C 코드를 순서대로 실행 (printf와 scanf를 코드 순서대로 처리)
+    const allStatements = [];
     
-    // printf 문 찾기 및 실행 (scanf 프롬프트 제외)
-    const printfStatements = extractPrintfStatements(code);
+    // printf문들과 위치 추가
+    printfStatements.forEach(stmt => {
+      const position = code.indexOf(stmt);
+      allStatements.push({ type: 'printf', statement: stmt, position });
+    });
     
-    for (const stmt of printfStatements) {
-      console.log(`🔍 printf 문 실행 시작: "${stmt}"`);
-      
-      // scanf 프롬프트용 printf인지 확인 (scanf 바로 앞에 있는 printf는 제외)
-      const codeLines = code.split('\n');
-      const printfLineIndex = codeLines.findIndex(line => line.includes(stmt.replace(/printf\s*\(/, 'printf(')));
-      const isScanfPrompt = scanfStatements.some(scanfStmt => {
-        const scanfLineIndex = codeLines.findIndex(line => line.includes(scanfStmt.replace(/scanf\s*\(/, 'scanf(')));
-        return printfLineIndex !== -1 && scanfLineIndex !== -1 && 
-               scanfLineIndex - printfLineIndex >= 0 && scanfLineIndex - printfLineIndex <= 3;
-      });
-      
-      if (!isScanfPrompt) {
-        const result = executePrintf(stmt);
-        console.log(`📤 printf 결과: "${result}"`);
+    // scanf문들과 위치 추가  
+    scanfStatements.forEach(stmt => {
+      const position = code.indexOf(stmt);
+      allStatements.push({ type: 'scanf', statement: stmt, position });
+    });
+    
+    // 위치 순서대로 정렬
+    allStatements.sort((a, b) => a.position - b.position);
+    
+    console.log('📋 실행 순서:', allStatements.map(s => `${s.type}: ${s.statement}`));
+    
+    // 순서대로 실행
+    let inputIndex = 0;
+    for (const stmt of allStatements) {
+      if (stmt.type === 'printf') {
+        console.log(`🔍 printf 실행: "${stmt.statement}"`);
+        const result = executePrintf(stmt.statement);
         if (result) {
           output += result;
         }
-      } else {
-        console.log(`🚫 scanf 프롬프트 printf 제외: "${stmt}"`);
+      } else if (stmt.type === 'scanf') {
+        console.log(`📝 scanf 실행: "${stmt.statement}"`);
+        if (inputData) {
+          const result = executeScanf(stmt.statement, inputData, inputIndex);
+          if (result.error) {
+            return { success: false, output: result.error };
+          }
+          inputIndex = result.nextInputIndex;
+        }
       }
     }
     
@@ -456,14 +474,77 @@ async function executeCCodeWithInput(code, inputData = null) {
   }
 }
 
-// 기존 함수는 호환성을 위해 유지 (비동기 처리 수정)
-async function executeCCode(code) {
-  const result = await executeCCodeWithInput(code);
+// 실제 C 컴파일러 사용 (Judge0 API)
+async function executeCCodeWithRealCompiler(code, inputData = null) {
+  try {
+    console.log('🔥 실제 C 컴파일러로 실행 시작:', { 
+      codeLength: code.length, 
+      hasInput: !!inputData 
+    });
+
+    const axios = require('axios');
+    
+    // stdin 준비
+    const stdin = inputData && inputData.length > 0 ? inputData.join('\n') : '';
+    
+    console.log('📤 Judge0에 전송:', { code: code.substring(0, 100) + '...', stdin });
+    
+    // 무료 Judge0 CE 서버 사용 (API 키 불필요)
+    const submitResponse = await axios.post('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
+      source_code: Buffer.from(code).toString('base64'),
+      language_id: 50, // C (GCC 9.2.0)  
+      stdin: Buffer.from(stdin).toString('base64')
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('✅ Judge0 응답 받음:', submitResponse.data);
+    
+    const result = submitResponse.data;
+    
+    if (result.status && result.status.id === 3) { // Success
+      let output = Buffer.from(result.stdout || '', 'base64').toString('utf8');
+      console.log('🎉 실행 성공:', output);
+      
+      // printf 프롬프트 메시지 제거 (Dev-C++ 스타일)
+      output = output.replace(/숫자를 입력하세요:/g, '');
+      output = output.replace(/:/g, ''); // 남은 콜론들 제거
+      output = output.trim();
+      
+      return { success: true, output: output };
+    } else {
+      // 컴파일 오류 또는 런타임 오류
+      const error = Buffer.from(result.stderr || '', 'base64').toString('utf8') || 
+                   Buffer.from(result.compile_output || '', 'base64').toString('utf8') || 
+                   '실행 중 오류가 발생했습니다.';
+      console.log('❌ 실행 실패:', error);
+      return { success: false, output: `컴파일/실행 오류:\n${error}` };
+    }
+    
+  } catch (error) {
+    console.error('Judge0 API 오류:', error);
+    return { 
+      success: false, 
+      output: `컴파일러 연결 오류: ${error.message}` 
+    };
+  }
+}
+
+// 기존 함수는 호환성을 위해 유지 (실제 컴파일러로 교체)
+async function executeCCode(code, inputData = null) {
+  const result = await executeCCodeWithRealCompiler(code, inputData);
   if (result.success) {
     return result.output;
   } else {
     return result.output || '실행 오류';
   }
+}
+
+// 새로운 함수도 실제 컴파일러 사용
+async function executeCCodeWithInput(code, inputData = null) {
+  return await executeCCodeWithRealCompiler(code, inputData);
 }
 
 // Python 코드 실행 함수
@@ -634,16 +715,62 @@ function checkCSyntax(code) {
 // printf 문 추출
 function extractPrintfStatements(code) {
   const statements = [];
-  // 더 정확한 printf 매칭 (중첩된 괄호 포함)
-  const regex = /printf\s*\([^;]*\)/g;
-  let match;
   
   console.log('printf 추출 시작, 코드:', code);
   
-  while ((match = regex.exec(code)) !== null) {
-    const statement = match[0];
-    console.log('추출된 printf 문:', statement);
-    statements.push(statement);
+  // 코드에서 모든 printf 문 찾기 - 단순한 문자열 매칭으로 변경
+  console.log('정규식 시도 전 코드 내용:', JSON.stringify(code));
+  
+  // 전체 코드에서 printf 찾기 - 완전 재작성
+  let searchIndex = 0;
+  while (true) {
+    const printfIndex = code.indexOf('printf', searchIndex);
+    if (printfIndex === -1) break;
+    
+    // printf 다음에 ( 가 있는지 확인
+    let nextCharIndex = printfIndex + 6;
+    while (nextCharIndex < code.length && /\s/.test(code[nextCharIndex])) {
+      nextCharIndex++; // 공백 건너뛰기
+    }
+    
+    if (nextCharIndex < code.length && code[nextCharIndex] === '(') {
+      // printf( 부터 매칭되는 ) 까지 추출
+      let parenCount = 1;
+      let inString = false;
+      let stringChar = '';
+      let endIndex = nextCharIndex + 1;
+      
+      for (let i = nextCharIndex + 1; i < code.length; i++) {
+        const char = code[i];
+        const prevChar = i > 0 ? code[i-1] : '';
+        
+        if ((char === '"' || char === "'") && !inString && prevChar !== '\\') {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar && inString && prevChar !== '\\') {
+          inString = false;
+          stringChar = '';
+        } else if (!inString) {
+          if (char === '(') {
+            parenCount++;
+          } else if (char === ')') {
+            parenCount--;
+            if (parenCount === 0) {
+              endIndex = i + 1;
+              break;
+            }
+          }
+        }
+      }
+      
+      const statement = code.substring(printfIndex, endIndex);
+      if (statement && !statements.includes(statement)) {
+        console.log('전체 코드에서 추출된 printf 문:', statement);
+        statements.push(statement);
+      }
+    }
+    
+    searchIndex = printfIndex + 1;
   }
   
   console.log('총 추출된 printf 문 개수:', statements.length, statements);
@@ -670,14 +797,9 @@ function extractScanfStatements(code) {
 
 // scanf에서 형식 지정자 추출
 function extractFormatSpecifiers(scanfStatement) {
-  const formatMatch = scanfStatement.match(/scanf\s*\(\s*["'](.*?)["']/);
-  if (!formatMatch) return [];
-  
-  const formatString = formatMatch[1];
-  const specifiers = formatString.match(/%[dfsci]/g) || [];
-  
-  console.log('형식 지정자 추출:', { scanfStatement, formatString, specifiers });
-  return specifiers;
+  // Dev-C++처럼 프롬프트 없이 입력만 받기 위해 빈 배열 반환
+  console.log('🎯 scanf 발견하지만 프롬프트 생성 안함 (Dev-C++ 스타일)');
+  return [''];  // 빈 프롬프트 하나만 반환
 }
 
 // printf 문에서 텍스트 추출
@@ -987,8 +1109,8 @@ app.post('/api/login', (req, res) => {
       }
     });
     
-    db.get('SELECT * FROM students WHERE TRIM(studentId) = TRIM(?) AND TRIM(name) = TRIM(?)', 
-           [username, password], (err, row) => {
+    db.get('SELECT * FROM students WHERE TRIM(studentId) = TRIM(?)', 
+           [username], (err, row) => {
       console.log('🔍 로그인 쿼리 결과:', { err, row, searchParams: { username, password } });
       
       if (err) {
@@ -1477,20 +1599,6 @@ app.put('/api/problems/:id/move', (req, res) => {
   });
 });
 
-// 문제 시작하기 (달팽이 상태로 설정)
-app.post('/api/problems/:problemId/start', (req, res) => {
-  const { studentId } = req.body;
-  
-  db.run(`INSERT OR REPLACE INTO problem_solutions (studentId, problemId, status, stars) 
-          VALUES (?, ?, 'solving', 0)`, 
-         [studentId, req.params.problemId], function(err) {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json({ success: true });
-  });
-});
 
 // 문제 제출하기 (자동채점)
 app.post('/api/problems/:problemId/submit', async (req, res) => {
@@ -1499,47 +1607,141 @@ app.post('/api/problems/:problemId/submit', async (req, res) => {
   
   console.log('문제 제출 받음:', { problemId, studentId, codeLength: code?.length });
   
-  // 1. 문제 정보 조회 (예상 출력)
+  // 1. 문제 정보 조회 (testCases 포함)
   db.get('SELECT * FROM problems WHERE id = ?', [problemId], async (err, problem) => {
     if (err || !problem) {
       console.error('문제 조회 실패:', err);
       return res.status(500).json({ error: '문제를 찾을 수 없습니다.' });
     }
     
-    // 2. 코드 실행하여 실제 출력 얻기
-    let actualOutput = '';
+    // 2. 테스트 케이스 파싱
+    let testCases = [];
     try {
-      if (code.includes('#include') || code.match(/#includ|int main|printf\s*\(|return 0/)) {
-        // C 언어 코드 실행
-        actualOutput = await executeCCode(code);
-      } else {
-        // Python 코드 실행 (기존 로직 사용)
-        actualOutput = executePythonCode(code);
+      if (problem.testCases) {
+        const parsed = JSON.parse(problem.testCases);
+        testCases = parsed.cases || [];
       }
       
-      // 특수 마커를 실제 문자로 변환하여 비교용으로 정규화
-      let normalizedOutput = actualOutput
-        .replace(/###NEWLINE###/g, '\n')
-        .replace(/###TAB###/g, '\t')
-        .replace(/###CARRIAGE###/g, '\r')
-        .trim();
+      // 테스트 케이스가 없으면 기본 케이스 생성
+      if (testCases.length === 0) {
+        testCases = [{
+          input: problem.inputExample,
+          expected: problem.outputExample,
+          description: '기본 테스트'
+        }];
+      }
+    } catch (e) {
+      console.error('테스트 케이스 파싱 오류:', e);
+      testCases = [{
+        input: problem.inputExample,
+        expected: problem.outputExample,
+        description: '기본 테스트'
+      }];
+    }
+    
+    console.log(`📋 ${testCases.length}개 테스트 케이스로 채점 시작`);
+    
+    // 3. 모든 테스트 케이스 실행
+    let passedTests = 0;
+    let totalTests = testCases.length;
+    let results = [];
+    
+    try {
+      for (let i = 0; i < testCases.length; i++) {
+        const testCase = testCases[i];
+        console.log(`🧪 테스트 ${i + 1}/${totalTests} 실행: ${testCase.description || '테스트 케이스'}`);
+        
+        let actualOutput = '';
+        
+        if (code.includes('#include') || code.match(/#includ|int main|printf\s*\(|return 0/)) {
+          // C 언어 코드 실행
+          const hasScanf = code.includes('scanf');
+          const inputData = (hasScanf && testCase.input) ? [testCase.input] : null;
+          
+          if (hasScanf && !testCase.input) {
+            actualOutput = '실행 오류: scanf가 있지만 입력 데이터가 없습니다';
+          } else {
+            const result = await executeCCodeWithInput(code, inputData);
+            if (result.success) {
+              actualOutput = result.output;
+            } else {
+              actualOutput = result.output || '실행 오류';
+            }
+          }
+        } else {
+          // Python 코드 실행
+          actualOutput = executePythonCode(code);
+        }
+        
+        // 출력 정규화
+        const normalizedOutput = actualOutput
+          .replace(/###NEWLINE###/g, '\n')
+          .replace(/###TAB###/g, '\t')
+          .replace(/###CARRIAGE###/g, '\r')
+          .trim();
+        
+        const expectedOutput = (testCase.expected || '').trim();
+        
+        // 유연한 채점: 핵심 값이 포함되어 있는지 확인
+        let isPassed = false;
+        
+        if (expectedOutput && normalizedOutput) {
+          // 1. 정확히 일치하는 경우
+          if (normalizedOutput === expectedOutput) {
+            isPassed = true;
+          }
+          // 2. 핵심 값이 포함된 경우 (숫자나 핵심 문자열)
+          else if (expectedOutput.match(/^\d+$/)) {
+            // 예상 출력이 숫자인 경우 - 해당 숫자가 출력에 포함되어 있으면 정답
+            isPassed = normalizedOutput.includes(expectedOutput);
+          }
+          // 3. 핵심 문자열이 포함된 경우
+          else {
+            // 예상 출력의 핵심 단어들이 모두 포함되어 있는지 확인
+            const expectedWords = expectedOutput.split(/\s+/).filter(word => word.length > 0);
+            isPassed = expectedWords.every(word => normalizedOutput.includes(word));
+          }
+        }
+        
+        console.log(`🔍 유연한 채점 - 예상: "${expectedOutput}", 실제: "${normalizedOutput}", 결과: ${isPassed ? 'PASS' : 'FAIL'}`);
+        
+        if (isPassed) {
+          passedTests++;
+        }
+        
+        results.push({
+          testNumber: i + 1,
+          description: testCase.description || `테스트 ${i + 1}`,
+          input: testCase.input,
+          expected: expectedOutput,
+          actual: normalizedOutput,
+          passed: isPassed
+        });
+        
+        console.log(`${isPassed ? '✅' : '❌'} 테스트 ${i + 1}: ${isPassed ? 'PASS' : 'FAIL'}`);
+        if (!isPassed) {
+          console.log(`   예상: "${expectedOutput}"`);
+          console.log(`   실제: "${normalizedOutput}"`);
+        }
+      }
       
-      // 3. 예상 출력과 비교하여 자동 채점 (단순 정답/오답)
-      const expectedOutput = (problem.outputExample || '').trim();
+      // 4. 점수 계산 (첫 번째 테스트만 채점에 사용, 나머지는 자습용)
       let stars = 0;
-      
-      if (normalizedOutput === expectedOutput) {
-        stars = 1; // 정답: 1점 (별 1개)
+      if (results.length > 0 && results[0].passed) {
+        stars = 1; // 첫 번째 테스트 통과하면 1점 (백준/코드업 스타일)
       } else {
-        stars = 0; // 오답 또는 실행 안됨: 0점
+        stars = 0; // 첫 번째 테스트 실패하면 0점
       }
       
-      console.log('자동채점 결과:', { 
+      console.log(`📊 백준 스타일 채점: 첫 번째 테스트 ${results[0]?.passed ? 'PASS' : 'FAIL'} → ${stars}점`);
+      console.log(`📚 추가 테스트들은 학생 자습용: ${passedTests}/${totalTests} 통과`);
+      
+      console.log('📊 다중 테스트 케이스 채점 결과:', { 
         problemId, 
         studentId, 
-        expectedOutput: expectedOutput,
-        actualOutput: normalizedOutput,
-        stars 
+        passedTests: `${passedTests}/${totalTests}`,
+        stars,
+        allPassed: passedTests === totalTests
       });
       
       // 4. 결과 저장
@@ -1571,7 +1773,14 @@ app.post('/api/problems/:problemId/submit', async (req, res) => {
         }
         
         console.log('📤 HTTP 응답 전송 중...');
-        res.json({ success: true, stars, actualOutput, expectedOutput });
+        res.json({ 
+          success: true, 
+          stars, 
+          passedTests,
+          totalTests,
+          results,
+          summary: `${passedTests}/${totalTests} 테스트 통과`
+        });
         console.log('✅ HTTP 응답 전송 완료');
       });
       
@@ -1975,15 +2184,13 @@ async function executeWithJudge0(code, input = '') {
     const axios = require('axios');
     
     // C 언어 제출 (언어 ID: 50 = C (GCC 9.2.0))
-    const submitResponse = await axios.post('https://judge0-ce.p.rapidapi.com/submissions', {
+    const submitResponse = await axios.post('https://ce.judge0.com/submissions', {
       source_code: Buffer.from(code).toString('base64'),
       language_id: 50, // C (GCC 9.2.0)
       stdin: Buffer.from(input || '').toString('base64')
     }, {
       headers: {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Key': JUDGE0_API_KEY,
-        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+        'Content-Type': 'application/json'
       }
     });
     
@@ -1993,10 +2200,9 @@ async function executeWithJudge0(code, input = '') {
     for (let i = 0; i < 20; i++) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const resultResponse = await axios.get(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+      const resultResponse = await axios.get(`https://ce.judge0.com/submissions/${token}`, {
         headers: {
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+          'Content-Type': 'application/json'
         }
       });
       
@@ -2052,10 +2258,35 @@ app.post('/api/execute', async (req, res) => {
           result = await executeCCodeWithInput(code, inputData);
         }
       }
-      // 2순위: 내부 scanf 처리 시스템 사용  
+      // 2순위: 대화형 scanf 처리 시스템
       else if (code.includes('scanf')) {
-        console.log('📥 scanf 포함된 C 코드, 내부 처리 시스템 사용');
-        result = await executeCCodeWithInput(code, inputData);
+        console.log('📥 scanf 포함된 C 코드, 대화형 처리 시작');
+        
+        if (inputData && inputData.length > 0) {
+          // 사용자가 입력값을 제공한 경우
+          console.log('👤 사용자 입력값으로 실행:', inputData);
+          result = await executeCCodeWithInput(code, inputData);
+        } else {
+          // 입력값이 없으면 대화형 모드로 전환
+          console.log('🖥️ 대화형 입력 모드 활성화');
+          
+          // 코드에서 scanf 개수 계산
+          const scanfCount = (code.match(/scanf\s*\(/g) || []).length;
+          console.log(`📊 감지된 scanf 개수: ${scanfCount}`);
+          
+          // scanf 개수만큼 입력 프롬프트 생성
+          const inputPrompts = [];
+          for (let i = 0; i < scanfCount; i++) {
+            inputPrompts.push('숫자를 입력하세요: ');
+          }
+          
+          result = {
+            success: false,
+            needsInput: true,
+            message: 'scanf 입력이 필요합니다',
+            inputPrompts: inputPrompts
+          };
+        }
       } else {
         console.log('📝 일반 C 코드, 기존 함수 사용');
         const output = await executeCCode(code);
@@ -2202,13 +2433,13 @@ io.on('connection', (socket) => {
       }
     });
     
-    // problemId가 있으면 problem_solutions 테이블도 업데이트
+    // problemId가 있으면 problem_solutions 테이블에 코드만 업데이트 (상태 변경하지 않음)
     if (problemId) {
-      db.run(`INSERT OR REPLACE INTO problem_solutions (studentId, problemId, status, stars, code, submittedAt) 
-              VALUES (?, ?, 'solving', 0, ?, CURRENT_TIMESTAMP)`, 
-             [studentId, problemId, code], (err) => {
+      db.run(`UPDATE problem_solutions SET code = ?, submittedAt = CURRENT_TIMESTAMP 
+              WHERE studentId = ? AND problemId = ?`, 
+             [code, studentId, problemId], (err) => {
         if (!err) {
-          console.log('문제별 코드 저장 성공');
+          console.log('문제별 코드 저장 성공 (상태 유지)');
         } else {
           console.error('문제별 코드 저장 실패:', err);
         }
@@ -2382,9 +2613,9 @@ app.delete('/api/lessons/:id', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
-  console.log('네트워크 접근이 가능합니다: http://192.168.68.55:${PORT}');
+  console.log(`네트워크 접근이 가능합니다: http://192.168.68.59:${PORT}`);
   console.log('요일별 반 관리 기능이 활성화되었습니다.');
 });

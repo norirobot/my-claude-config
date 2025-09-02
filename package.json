@@ -1,0 +1,14 @@
+{
+  "name": "coding-mentor",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "deploy": "npm run build && npm run backend"
+  },
+  "dependencies": {
+    "concurrently": "^7.6.0"
+  }
+}

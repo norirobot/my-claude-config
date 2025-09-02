@@ -1,9 +1,28 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import Editor from '@monaco-editor/react';
+import BlocklyEditor from './BlocklyEditor';
+import GameMap from './GameMap';
+import Login from './Login';
+import AdminPanel from './AdminPanel';
+import StudentDashboard from './StudentDashboard';
 
-const API_BASE_URL = 'http://192.168.68.55:5000/api';
+// 자동 네트워크 감지 시스템
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  console.log('🌐 현재 접속 호스트명:', hostname);
+  
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3001/api';
+  } else {
+    // IP 주소로 접속한 경우, 같은 IP의 3001 포트 사용
+    return `http://${hostname}:3001/api`;
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('🔗 API 서버 주소:', API_BASE_URL);
 let socket = null;
 
 // 소켓 초기화 함수
@@ -14,7 +33,9 @@ const initializeSocket = () => {
   }
   
   try {
-    socket = io('http://192.168.68.55:5000', {
+    const socketUrl = API_BASE_URL.replace('/api', '');
+    console.log('🔌 소켓 연결 주소:', socketUrl);
+    socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true
@@ -929,11 +950,82 @@ const CodingMentoringPlatform = () => {
   console.log('🚀 CodingMentoringPlatform 컴포넌트 시작됨');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+
+  // 로그인 체크
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeUser('user');
+      }
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsLoggedIn(false);
+  };
+
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (user.role === 'admin') {
+    return (
+      <div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: '10px 20px',
+          backgroundColor: '#f5f5f5',
+          borderBottom: '1px solid #ddd'
+        }}>
+          <h1>코딩 멘토 - 관리자</h1>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
+        <AdminPanel user={user} />
+      </div>
+    );
+  }
+
+  if (user.role === 'student') {
+    return <StudentDashboard user={user} />;
+  }
+
   const [userType, setUserType] = useState(null);
   const [currentTab, setCurrentTab] = useState('mentor');
   const [selectedClass, setSelectedClass] = useState('전체');
   const [sortBy, setSortBy] = useState('studentId'); // 'studentId' 또는 'name'
   const [code, setCode] = useState(''); // 현재 선택된 문제의 코드
+  const [isRestoringState, setIsRestoringState] = useState(false); // 상태 복원 중인지 여부 - 임시 비활성화
+  const [hasInitialized, setHasInitialized] = useState(false); // 초기화 완료 여부
   const [problemCodes, setProblemCodes] = useState({}); // 문제별 코드 저장
   
   const [students, setStudents] = useState([]);
@@ -1028,7 +1120,7 @@ const CodingMentoringPlatform = () => {
         loadLiveMessages(parsedUser.id); // 실시간 메시지 로드
       }
     }
-  }, []); // 의존성 배열을 빈 배열로 변경하여 무한 루프 방지
+  }, [user?.id, userType]); // user.id와 userType 변경시에만 실행
 
   // 첫 번째 문제 자동 선택 및 저장된 코드 불러오기 (무한 루프 방지)
   useEffect(() => {
@@ -1043,27 +1135,48 @@ const CodingMentoringPlatform = () => {
       // 2. 서버에서 저장된 코드 확인  
       const savedCode = problemStatus[firstProblem.id]?.code;
       
-      // 3. 우선순위: localStorage 코드가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
-      const hasValidLocalCode = localCode && localCode.trim() !== '' && localCode.trim().length > 10; // 최소 10자 이상
-      const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10; // 최소 10자 이상  
-      const newCode = (hasValidLocalCode ? localCode : (hasValidSavedCode ? savedCode : firstProblem.starterCode)) || '';
+      // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+      const problemStars = problemStatus[firstProblem.id]?.stars || 0;
+      const isUnsolvedProblem = problemStars === 0;
+      
+      let newCode;
+      if (isUnsolvedProblem) {
+        console.log('🌟 아직 풀지 않은 첫 번째 문제 - 스타터 코드만 표시:', { 
+          problemId: firstProblem.id, 
+          problemTitle: firstProblem.title,
+          stars: problemStars 
+        });
+        newCode = firstProblem.starterCode || '';
+      } else {
+        // 이미 풀어본 문제는 기존 로직대로 진행
+        // 3. 우선순위: localStorage 코드가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
+        const hasValidLocalCode = localCode && localCode.trim() !== '' && localCode.trim().length > 10; // 최소 10자 이상
+        const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10; // 최소 10자 이상  
+        newCode = (hasValidLocalCode ? localCode : (hasValidSavedCode ? savedCode : firstProblem.starterCode)) || '';
+      }
       
       console.log('🔄 첫 번째 문제 자동 선택 및 저장된 코드 로드:', { 
         problemId: firstProblem.id,
         problemTitle: firstProblem.title,
+        별점수: problemStars,
+        미해결문제: isUnsolvedProblem,
         hasLocalCode: !!localCode,
         localCode: localCode?.substring(0, 50) + '...',
-        hasValidLocalCode: hasValidLocalCode,
         hasSavedCode: !!savedCode,
         savedCode: savedCode?.substring(0, 50) + '...',
-        hasValidSavedCode: hasValidSavedCode,
         hasStarterCode: !!firstProblem.starterCode,
         starterCode: firstProblem.starterCode?.substring(0, 50) + '...',
         newCode: newCode?.substring(0, 50) + '...'
       });
+      // localStorage 복원 중이면 실행하지 않음
+      if (isRestoringState) {
+        console.log('⏸️ 상태 복원 중이므로 자동 선택 건너뜀');
+        return;
+      }
+      
       setCode(newCode);
     }
-  }, [problems, userType, selectedProblem]); // user 제거하여 무한 루프 방지
+  }, [problems, userType, selectedProblem, isRestoringState]);
 
   // 페이지 떠나기 전 코드 저장 (로컬스토리지 + 서버)
   useEffect(() => {
@@ -1383,37 +1496,28 @@ const CodingMentoringPlatform = () => {
         const localBackup = backupStatus ? JSON.parse(backupStatus) : {};
         console.log('localStorage에서 복원된 제출 상태:', localBackup);
         
-        // 서버 상태와 localStorage 백업을 병합 (localStorage 우선)
-        const merged = { ...response.data };
+        // 서버 데이터를 우선시 (컴퓨터간 일관성 보장)
+        console.log('🌐 서버 데이터를 우선 적용 (컴퓨터간 동기화)');
+        const serverData = { ...response.data };
         
-        // localStorage 백업에서 제출 완료된 문제 복원
+        // 서버 데이터가 없는 경우에만 localStorage 백업 사용
         Object.keys(localBackup).forEach(problemId => {
           const backupProblem = localBackup[problemId];
-          if (backupProblem && backupProblem.status === 'solved' && backupProblem.lastSubmittedAt) {
-            console.log('🛡️ localStorage 백업에서 제출 상태 복원:', { problemId, stars: backupProblem.stars });
-            merged[problemId] = backupProblem; // 백업 상태 복원
+          // 서버에 데이터가 없고, 백업에 제출 완료 상태가 있을 때만 복원
+          if (!serverData[problemId] && backupProblem && backupProblem.status === 'solved' && backupProblem.lastSubmittedAt) {
+            console.log('🛡️ 서버에 없는 데이터만 localStorage에서 복원:', { problemId, stars: backupProblem.stars });
+            serverData[problemId] = backupProblem;
           }
         });
         
-        console.log('병합된 problemStatus:', merged);
-        setProblemStatus(merged);
+        console.log('🔄 최종 problemStatus (서버 우선):', serverData);
+        setProblemStatus(serverData);
       } catch (error) {
         console.error('문제 상태 로드 실패:', error);
       }
     }
   }, [userType, user]);
 
-  // 문제 시작하기 (달팽이 상태)
-  const startProblem = async (problemId) => {
-    if (userType === 'student' && user?.id) {
-      try {
-        await axios.post(`${API_BASE_URL}/problems/${problemId}/start`, { studentId: user.id });
-        loadProblemStatus(); // 상태 새로고침
-      } catch (error) {
-        console.error('문제 시작 실패:', error);
-      }
-    }
-  };
 
   // 문제 제출하기 (백엔드 자동채점)
   const submitProblem = async (problemId, stars) => {
@@ -1443,12 +1547,30 @@ const CodingMentoringPlatform = () => {
         
         // 백엔드에서 받은 별점 사용
         const backendStars = response.data.stars || 0;
-        console.log('최종 별점:', backendStars);
+        const { passedTests = 0, totalTests = 1, results = [], summary = '' } = response.data;
         
+        console.log('최종 별점:', backendStars);
+        console.log(`테스트 결과: ${passedTests}/${totalTests} 통과`);
+        
+        // 백준/코드업 스타일 결과 표시
+        let message = '';
         if (backendStars === 1) {
-          console.log('🎉 정답! 1점 획득!');
+          message = '🎉 정답! 1점 획득!';
+          if (totalTests > 1) {
+            message += `\\n📚 추가 자습 테스트: ${passedTests}/${totalTests} 통과`;
+          }
         } else {
-          console.log('❌ 오답... 0점');
+          message = '❌ 오답... 0점';
+          if (results.length > 0 && !results[0].passed) {
+            message += `\\n기본 테스트 실패: 예상 "${results[0].expected}", 실제 "${results[0].actual}"`;
+          }
+        }
+        
+        console.log(message);
+        
+        // 백준 스타일: 간단한 결과 표시
+        if (totalTests > 1 && backendStars === 1) {
+          console.log(`📚 자습용 추가 테스트 결과: ${passedTests}/${totalTests} 통과`);
         }
         
         // 즉시 로컬 상태 업데이트 (백엔드 결과 사용)
@@ -1825,6 +1947,157 @@ const CodingMentoringPlatform = () => {
     };
   }, [selectedStudent, userType, currentLesson]);
 
+  // 로그인 후 localStorage에서 상태 복원
+  React.useEffect(() => {
+    if (userType === 'student' && user?.id) {
+      console.log('📂 localStorage에서 학생 상태 복원 중...');
+      // setIsRestoringState(true); // 복원 시작 - 임시 비활성화
+      
+      // 현재 차시 복원
+      const savedLesson = localStorage.getItem(`student_${user.id}_currentLesson`);
+      if (savedLesson) {
+        const lessonNum = parseInt(savedLesson);
+        console.log('🔄 저장된 차시 복원:', lessonNum);
+        setCurrentLesson(lessonNum);
+        
+        // 차시 복원 후 해당 차시의 문제들 로드
+        setTimeout(() => {
+          console.log('📚 복원된 차시의 문제들 로드:', lessonNum);
+          loadProblems(lessonNum);
+          loadProblemStatus();
+        }, 100);
+      } else {
+        // 저장된 차시가 없으면 기본 1차시 로드
+        loadProblems(1);
+        loadProblemStatus();
+        // 저장된 차시가 없어도 복원 상태 해제
+        setTimeout(() => {
+          setIsRestoringState(false);
+        }, 500);
+      }
+      
+      // 선택된 문제 복원 (문제 로드 후)
+      setTimeout(() => {
+        const savedProblem = localStorage.getItem(`student_${user.id}_selectedProblem`);
+        if (savedProblem) {
+          try {
+            const problemData = JSON.parse(savedProblem);
+            console.log('🔄 저장된 문제 복원:', problemData.title);
+            setSelectedProblem(problemData);
+            
+            // 문제 복원 후 해당 문제의 코드도 로드
+            setTimeout(() => {
+              console.log('📝 복원된 문제의 코드 로드 시도');
+              const storageKey = `student_${user.id}_problem_${problemData.id}_code`;
+              const localStorageCode = localStorage.getItem(storageKey);
+              
+              // problemStatus에서 서버 데이터 확인
+              const serverCode = problemStatus[problemData.id]?.code;
+              
+              // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+              const problemStars = problemStatus[problemData.id]?.stars || 0;
+              const isUnsolvedProblem = problemStars === 0;
+              
+              let codeToLoad;
+              if (isUnsolvedProblem) {
+                console.log('🌟 아직 풀지 않은 문제 복원 - 스타터 코드만 표시:', { 
+                  problemId: problemData.id, 
+                  problemTitle: problemData.title,
+                  stars: problemStars 
+                });
+                codeToLoad = problemData.starterCode || '';
+              } else {
+                // 이미 풀어본 문제는 기존 로직대로 진행
+                // 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
+                codeToLoad = serverCode || localStorageCode || problemData.starterCode || '';
+              }
+              
+              console.log('📝 로드할 코드:', { 
+                서버코드: !!serverCode, 
+                로컬코드: !!localStorageCode, 
+                스타터코드: !!problemData.starterCode,
+                별점수: problemStars,
+                미해결문제: isUnsolvedProblem,
+                최종코드길이: codeToLoad.length 
+              });
+              
+              if (codeToLoad) {
+                setCode(codeToLoad);
+              }
+              setIsRestoringState(false); // 항상 복원 완료 처리
+            }, 100);
+          } catch (e) {
+            console.warn('❌ 저장된 문제 데이터 파싱 실패:', e);
+            setIsRestoringState(false); // 파싱 실패 시에도 상태 해제
+          }
+        } else {
+          // 저장된 문제가 없는 경우에도 복원 상태 해제
+          console.log('📝 저장된 문제 없음, 복원 상태 해제');
+          setTimeout(() => {
+            setIsRestoringState(false);
+          }, 400);
+        }
+      }, 300); // 시간을 더 늘림 (problemStatus 로드 대기)
+    }
+  }, [user?.id, userType]);
+
+  // problemStatus가 로드된 후 선택된 문제의 코드 복원
+  React.useEffect(() => {
+    if (userType === 'student' && user?.id && selectedProblem && Object.keys(problemStatus).length > 0) {
+      console.log('📝 problemStatus 로드 후 코드 복원 시도');
+      
+      const storageKey = `student_${user.id}_problem_${selectedProblem.id}_code`;
+      const localStorageCode = localStorage.getItem(storageKey);
+      const serverCode = problemStatus[selectedProblem.id]?.code;
+      
+      // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+      const problemStars = problemStatus[selectedProblem.id]?.stars || 0;
+      const isUnsolvedProblem = problemStars === 0;
+      
+      let codeToLoad;
+      if (isUnsolvedProblem) {
+        console.log('🌟 아직 풀지 않은 문제 복원 - 스타터 코드만 표시:', { 
+          problemId: selectedProblem.id, 
+          problemTitle: selectedProblem.title,
+          stars: problemStars 
+        });
+        codeToLoad = selectedProblem.starterCode || '';
+      } else {
+        // 이미 풀어본 문제는 기존 로직대로 진행
+        // 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
+        codeToLoad = serverCode || localStorageCode || selectedProblem.starterCode || '';
+      }
+      
+      console.log('📝 최종 코드 로드:', { 
+        문제ID: selectedProblem.id,
+        문제제목: selectedProblem.title,
+        별점수: problemStars,
+        미해결문제: isUnsolvedProblem,
+        서버코드존재: !!serverCode, 
+        서버코드내용: serverCode ? serverCode.substring(0, 50) + '...' : 'null',
+        로컬코드존재: !!localStorageCode, 
+        로컬코드내용: localStorageCode ? localStorageCode.substring(0, 50) + '...' : 'null',
+        스타터코드존재: !!selectedProblem.starterCode,
+        스타터코드내용: selectedProblem.starterCode ? selectedProblem.starterCode.substring(0, 50) + '...' : 'null',
+        최종코드길이: codeToLoad.length,
+        최종코드: codeToLoad.substring(0, 100) + '...',
+        현재code상태: code ? code.substring(0, 50) + '...' : 'null'
+      });
+      
+      if (codeToLoad) {
+        console.log('🔄 setCode 호출:', codeToLoad.substring(0, 100) + '...');
+        setCode(codeToLoad);
+        
+        // setCode 후 상태 확인
+        setTimeout(() => {
+          console.log('✅ setCode 완료 후 확인 - 현재 code 상태:', code ? code.substring(0, 100) + '...' : 'null');
+        }, 100);
+      } else {
+        console.log('❌ 로드할 코드가 없음');
+      }
+    }
+  }, [problemStatus, selectedProblem, user?.id, userType]);
+
   // scanf 입력 처리 후 실행 계속하는 함수
   const continueScanfExecution = async (codeToRun, detectedLanguage, inputs, originalResponse) => {
     try {
@@ -1856,20 +2129,24 @@ const CodingMentoringPlatform = () => {
       cleanOutput = cleanOutput.replace(/:{2,}/g, '');
       cleanOutput = cleanOutput.trim();
       
-      // Dev-C++ 터미널 완전 재현 - 최종 출력
-      // scanf는 각각 새 줄에, printf 결과는 새 줄에서 시작
+      // Dev-C++ 터미널 완전 재현 - 입력과 출력 모두 표시
+      // 각 입력은 새 줄에, 최종 결과도 새 줄에
       const inputLines = inputs.map((input, index) => originalResponse.inputPrompts[index] + input);
       
       const allLines = [
-        ...inputLines, // 모든 입력 줄
-        cleanOutput // printf 출력은 새 줄에서 시작
+        ...inputLines, // 입력 과정 표시
+        cleanOutput    // 최종 printf 결과
       ];
 
       const terminalOutput = `
-        <div style="background: #000000; color: #ffffff; padding: 16px; border-radius: 8px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace; font-size: 14px; min-height: 200px;">
-          <pre style="margin: 0; padding: 0; font-family: inherit; font-size: inherit; color: inherit; white-space: pre;">${allLines.join('\n')}</pre>
-          <div style="color: #666; font-size: 11px; margin-top: 12px; border-top: 1px solid #333; padding-top: 8px;">
-            실행 완료 (Press any key to continue...)
+        <div style="background: #1e1e1e; color: #d4d4d4; padding: 20px; border: 2px solid #333; border-radius: 8px; font-family: 'Courier New', 'SF Mono', Monaco, monospace; font-size: 14px; min-height: 350px;">
+          <div style="color: #888; font-size: 12px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333;">
+            🖥️ Dev-C++ 터미널 - 프로그램 실행 완료
+          </div>
+          <pre style="margin: 0; padding: 0; font-family: inherit; font-size: inherit; color: inherit; white-space: pre; line-height: 1.6;">${allLines.join('\n')}</pre>
+          <div style="color: #666; font-size: 11px; margin-top: 20px; border-top: 1px solid #333; padding-top: 12px;">
+            ✅ Process returned 0 (0x0) execution time: ${Math.random() * 0.5 + 0.1}s<br>
+            Press any key to continue...
           </div>
         </div>
       `;
@@ -1887,7 +2164,24 @@ const CodingMentoringPlatform = () => {
   const handleLogin = async (formData) => {
     try {
       console.log('🔑 로그인 시도:', { formData, apiUrl: `${API_BASE_URL}/login` });
-      const response = await axios.post(`${API_BASE_URL}/login`, formData);
+      
+      // 네트워크 연결 테스트 먼저 실행
+      try {
+        await axios.get(`${API_BASE_URL.replace('/api', '')}/`, { timeout: 5000 });
+        console.log('✅ 백엔드 서버 연결 확인됨');
+      } catch (connectError) {
+        console.error('❌ 백엔드 서버 연결 실패:', connectError.message);
+        alert('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+        return { success: false, message: '서버에 연결할 수 없습니다.' };
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/login`, formData, {
+        timeout: 10000, // 10초 타임아웃
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
       console.log('🔑 로그인 응답:', response);
       
       if (response.data.success) {
@@ -1992,28 +2286,31 @@ const CodingMentoringPlatform = () => {
           const currentPrompt = response.data.inputPrompts[currentInputIndex];
 
           setOutput(`
-            <div style="background: #000000; color: #ffffff; padding: 16px; border-radius: 8px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace; font-size: 14px; min-height: 200px; position: relative;">
-              <pre style="margin: 0; padding: 0; font-family: inherit; font-size: inherit; color: inherit; white-space: pre;">${terminalDisplay.join('\n')}
-<span style="color: #ffffff;">${currentPrompt}</span><input 
+            <div style="background: #1e1e1e; color: #d4d4d4; padding: 20px; border: 2px solid #333; border-radius: 8px; font-family: 'Courier New', 'SF Mono', Monaco, monospace; font-size: 14px; min-height: 350px; position: relative;">
+              <div style="color: #888; font-size: 12px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333;">
+                🖥️ Dev-C++ 터미널 - 프로그램 실행 중...
+              </div>
+              <pre style="margin: 0; padding: 0; font-family: inherit; font-size: inherit; color: inherit; white-space: pre; line-height: 1.6;">${terminalDisplay.join('\n')}
+<span style="color: #d4d4d4;">${currentPrompt}</span><input 
                   type="text" 
                   id="terminal-input" 
                   style="
                     background: transparent; 
                     border: none; 
                     outline: none; 
-                    color: #00ff00; 
+                    color: #00ff41; 
                     font-family: inherit; 
                     font-size: inherit; 
                     margin: 0;
                     padding: 0;
-                    width: 120px;
-                    height: 16px;
+                    width: 150px;
+                    height: 18px;
                     vertical-align: baseline;
                   " 
                   autocomplete="off"
-                /><span style="color: #00ff00; animation: blink 1s infinite;">█</span></pre>
-              <div style="color: #666; font-size: 11px; position: absolute; bottom: 8px; right: 16px;">
-                Enter 확인 | Esc 취소
+                /><span style="color: #00ff41; animation: blink 1s infinite;">_</span></pre>
+              <div style="color: #666; font-size: 11px; position: absolute; bottom: 12px; right: 20px;">
+                Enter: 입력 완료 | Esc: 프로그램 종료
               </div>
               <style>
                 @keyframes blink {
@@ -2622,11 +2919,6 @@ const CodingMentoringPlatform = () => {
       }
       setProblemCodes(prev => ({ ...prev, [problemId]: newCode }));
       
-      // 🐌 사용자가 직접 입력할 때만 달팽이 상태 시작 (현재 선택된 문제에만)
-      if (isUserInput && !targetProblemId && problemStatus[problemId]?.status !== 'solving' && problemStatus[problemId]?.status !== 'solved') {
-        console.log('🐌 사용자 입력으로 인한 달팽이 상태 시작:', problemId);
-        startProblem(problemId);
-      }
       
       // 🔒 최종 검증: 현재 선택된 문제와 일치하는지 확인
       if (!targetProblemId && currentSelectedProblem?.id !== problemId) {
@@ -2677,6 +2969,34 @@ const CodingMentoringPlatform = () => {
   }
 
   const classStats = userType === 'admin' && currentTab === 'mentor' ? getClassStats() : {};
+
+  // 누적 점수 계산 함수 (전체)
+  const getCumulativeScore = () => {
+    if (userType !== 'student' || !problemStatus) return 0;
+    let totalScore = 0;
+    Object.entries(problemStatus).forEach(([problemId, status]) => {
+      // stars 필드에서 점수를 가져옴 (score 대신 stars 사용)
+      if (status && typeof status.stars === 'number') {
+        totalScore += status.stars;
+      }
+    });
+    return totalScore;
+  };
+
+  // 특정 차시 점수 계산 함수
+  const getLessonScore = (lessonNumber) => {
+    if (userType !== 'student' || !problemStatus || !problems) return 0;
+    let lessonScore = 0;
+    problems.forEach(problem => {
+      if (problem.lesson === lessonNumber && problemStatus[problem.id]) {
+        const status = problemStatus[problem.id];
+        if (status && typeof status.stars === 'number') {
+          lessonScore += status.stars;
+        }
+      }
+    });
+    return lessonScore;
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
@@ -2736,7 +3056,45 @@ const CodingMentoringPlatform = () => {
                   >
                     👁️ 학생 뷰
                   </button>
+                  <button
+                    onClick={() => setCurrentTab('blocks')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: currentTab === 'blocks' ? '#2563eb' : '#f3f4f6',
+                      color: currentTab === 'blocks' ? 'white' : '#374151',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🧩 블록코딩
+                  </button>
+                  <button
+                    onClick={() => setCurrentTab('game')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: currentTab === 'game' ? '#2563eb' : '#f3f4f6',
+                      color: currentTab === 'game' ? 'white' : '#374151',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🎮 게임맵
+                  </button>
                 </>
+              )}
+              {userType === 'student' && (
+                <span style={{ 
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}>
+                  누적점수: {getCumulativeScore()}점
+                </span>
               )}
               <button
                 onClick={handleLogout}
@@ -2845,6 +3203,8 @@ const CodingMentoringPlatform = () => {
             onSendFeedback={sendFeedback}
             user={user}
             fontSize={fontSize}
+            onIncreaseFontSize={() => setFontSize(prev => Math.min(prev + 2, 24))}
+            onDecreaseFontSize={() => setFontSize(prev => Math.max(prev - 2, 10))}
             helpRequests={helpRequests}
             onResolveHelp={resolveHelpRequest}
             onDeleteHelp={deleteHelpRequest}
@@ -2884,6 +3244,12 @@ const CodingMentoringPlatform = () => {
             onEditLesson={editLesson}
             onDeleteLesson={deleteLesson}
           />
+        ) : userType === 'admin' && currentTab === 'blocks' ? (
+          /* 블록 코딩 에디터 */
+          <BlocklyEditor />
+        ) : userType === 'admin' && currentTab === 'game' ? (
+          /* 게임맵 인터페이스 */
+          <GameMap user={user} userType={userType} />
         ) : (
           /* 학생 뷰 */
           <StudentView 
@@ -2896,14 +3262,23 @@ const CodingMentoringPlatform = () => {
             isRunning={isRunning}
             problems={problems}
             selectedProblem={selectedProblem}
+            problemStatus={problemStatus}
+            getLessonScore={getLessonScore}
             onSelectProblem={(problem) => {
               console.log('🚨🚨🚨 문제 선택됨:', { 
                 새문제: { id: problem.id, title: problem.title },
                 현재문제: { id: selectedProblem?.id, title: selectedProblem?.title },
-                현재코드길이: code?.length
+                현재코드길이: code?.length,
+                상태복원중: isRestoringState
               });
               console.log('🗂️ 현재 problemStatus:', problemStatus);
               console.log('💾 이 문제의 저장된 상태:', problemStatus[problem.id]);
+              
+              // 상태 복원 중이면 실행하지 않음
+              if (isRestoringState) {
+                console.log('⏸️ 상태 복원 중이므로 문제 선택 핸들러 건너뜀');
+                return;
+              }
               
               // 현재 선택된 문제와 같은 경우 코드를 바꾸지 않음
               if (selectedProblem?.id === problem.id) {
@@ -2925,27 +3300,57 @@ const CodingMentoringPlatform = () => {
                 새로운: { id: problem.id, title: problem.title }
               });
               setSelectedProblem(problem);
+              // localStorage에 선택된 문제 저장 (학생의 경우)
+              if (userType === 'student' && user?.id) {
+                localStorage.setItem(`student_${user.id}_selectedProblem`, JSON.stringify(problem));
+              }
+              setOutput(''); // 문제 변경 시 실행창 초기화
               
-              // 새 문제의 저장된 코드 불러오기 (localStorage > 로컬 상태 > 서버)
+              // 새 문제의 저장된 코드 불러오기 (서버 우선 - 컴퓨터간 일관성 보장)
               const storageKey = `student_${user?.id}_problem_${problem.id}_code`;
               const localStorageCode = userType === 'student' && user?.id ? localStorage.getItem(storageKey) : null;
               const localCode = problemCodes[problem.id];
               const savedCode = problemStatus[problem.id]?.code;
-              // localStorage 코드가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
+              
+              // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+              const problemStars = problemStatus[problem.id]?.stars || 0;
+              const isUnsolvedProblem = problemStars === 0;
+              
+              if (isUnsolvedProblem) {
+                console.log('🌟 아직 풀지 않은 문제 - 스타터 코드만 표시:', { 
+                  problemId: problem.id, 
+                  problemTitle: problem.title,
+                  stars: problemStars 
+                });
+                const newCode = problem.starterCode || '';
+                console.log('🔄 새 코드 설정:', { 
+                  problemId: problem.id, 
+                  problemTitle: problem.title,
+                  codeSource: 'STARTER',
+                  finalCode: newCode ? newCode.substring(0, 30) + '...' : '없음'
+                });
+                setCode(newCode);
+                console.log('✅ 문제 전환 완료:', { 새선택문제: problem.title, 새코드길이: newCode?.length });
+                return; // 여기서 종료
+              }
+              
+              // 이미 풀어본 문제는 기존 로직대로 진행
+              // 서버 데이터가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
+              const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10 && !savedCode.includes('여기에 코드를 작성하세요'); // 최소 10자 이상, 템플릿 아님
               const hasValidLocalStorageCode = localStorageCode && localStorageCode.trim() !== '' && localStorageCode.trim().length > 10; // 최소 10자 이상
               const hasValidLocalCode = localCode && localCode.trim() !== '' && localCode.trim().length > 10; // 최소 10자 이상
-              const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10; // 최소 10자 이상
-              const newCode = (hasValidLocalStorageCode ? localStorageCode : (hasValidLocalCode ? localCode : (hasValidSavedCode ? savedCode : problem.starterCode))) || ''; // localStorage > 로컬 -> 서버 -> 스타터코드
+              const newCode = (hasValidSavedCode ? savedCode : (hasValidLocalStorageCode ? localStorageCode : (hasValidLocalCode ? localCode : problem.starterCode))) || ''; // 서버 > localStorage > 로컬 > 스타터코드
               
-              console.log('🔍 문제 전환 시 코드 로드:', { 
+              console.log('🔍 문제 전환 시 코드 로드 (서버 우선):', { 
                 problemId: problem.id,
+                hasSavedCode: !!savedCode,
+                hasValidSavedCode: hasValidSavedCode,
                 hasLocalStorageCode: !!localStorageCode,
                 hasValidLocalStorageCode: hasValidLocalStorageCode,
                 hasLocalCode: !!localCode,
                 hasValidLocalCode: hasValidLocalCode,
-                hasSavedCode: !!savedCode,
-                hasValidSavedCode: hasValidSavedCode,
                 hasStarterCode: !!problem.starterCode,
+                selectedSource: hasValidSavedCode ? 'SERVER' : hasValidLocalStorageCode ? 'LOCALSTORAGE' : hasValidLocalCode ? 'LOCAL' : 'STARTER',
                 finalCode: newCode?.substring(0, 50) + '...'
               });
               
@@ -2967,14 +3372,25 @@ const CodingMentoringPlatform = () => {
               });
               setCode(newCode);
               console.log('✅ 문제 전환 완료:', { 새선택문제: problem.title, 새코드길이: newCode?.length });
-              // 문제 선택만으로는 달팽이 상태로 만들지 않음 - 실제 코드 수정시에만 달팽이 (isUserInput = false)
+              // 문제 선택 시 코드 로드
             }}
             currentLesson={currentLesson}
             onLessonChange={(lesson) => {
+              console.log('📚 차시 변경됨:', { 새차시: lesson, 상태복원중: isRestoringState });
+              
+              // 상태 복원 중이면 실행하지 않음
+              if (isRestoringState) {
+                console.log('⏸️ 상태 복원 중이므로 차시 변경 핸들러 건너뜀');
+                return;
+              }
+              
               setCurrentLesson(lesson);
+              // localStorage에 현재 차시 저장 (학생의 경우)
+              if (userType === 'student' && user?.id) {
+                localStorage.setItem(`student_${user.id}_currentLesson`, lesson.toString());
+              }
               loadProblems(lesson);
             }}
-            problemStatus={problemStatus}
             onSubmitProblem={submitProblem}
             lessons={lessons}
             latestFeedback={latestFeedback}
@@ -3034,8 +3450,8 @@ const LoginScreen = ({ onLogin }) => {
       type: loginType
     });
 
-    if (!result.success) {
-      setError(result.message);
+    if (!result || !result.success) {
+      setError(result?.message || '로그인에 실패했습니다. 다시 시도해주세요.');
     }
     setIsLoading(false);
   };
@@ -3178,7 +3594,7 @@ const AdminDashboard = ({
   students, selectedStudent, setSelectedStudent, onAddStudent, onEditStudent, 
   onDeleteStudent, onHelp, onUpdateCode, onRunCode, output, isRunning, selectedClass, 
   setSelectedClass, classOptions, sortBy, setSortBy,
-  onSendFeedback, user, fontSize, helpRequests = [], onResolveHelp, onDeleteHelp,
+  onSendFeedback, user, fontSize, onIncreaseFontSize, onDecreaseFontSize, helpRequests = [], onResolveHelp, onDeleteHelp,
   liveMessageInput, setLiveMessageInput, onSendLiveMessage, sentMessages = [], onDeleteLiveMessage,
   onSendCodeModification, originalCode, setOriginalCode, hasModifications, codeModifications = [],
   findCodeDifferences, loadStudentCurrentCode
@@ -3491,7 +3907,52 @@ const AdminDashboard = ({
         <h2 style={{ fontSize: '20px', fontWeight: '600' }}>
           {selectedStudent ? `${selectedStudent.name}의 코드` : '학생을 선택하세요'}
         </h2>
-        <span style={{ fontSize: '16px', color: '#6b7280' }}>📡 실시간 관찰</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* 폰트 크기 조절 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px', color: '#6b7280' }}>폰트 크기:</span>
+            <button
+              onClick={onDecreaseFontSize}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#f3f4f6',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '18px',
+                color: '#374151'
+              }}
+            >
+              -
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: '500', minWidth: '35px', textAlign: 'center', color: '#374151' }}>
+              {fontSize}px
+            </span>
+            <button
+              onClick={onIncreaseFontSize}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#f3f4f6',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '18px',
+                color: '#374151'
+              }}
+            >
+              +
+            </button>
+          </div>
+          <span style={{ fontSize: '16px', color: '#6b7280' }}>📡 실시간 관찰</span>
+        </div>
       </div>
       
       {selectedStudent ? (
@@ -3701,12 +4162,12 @@ const StudentView = ({
   problems, selectedProblem, onSelectProblem, currentLesson, onLessonChange,
   problemStatus, onSubmitProblem, lessons, latestFeedback,
   fontSize, onIncreaseFontSize, onDecreaseFontSize, submittingProblems, liveMessages = [],
-  codeModifications = [], userType, socket
+  codeModifications = [], userType, socket, getLessonScore
 }) => {
   return (
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '24px' }}>
     {/* 문제 목록 및 선택 */}
-    <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
+    <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: '600' }}>문제 선택</h2>
         {user?.class && (
@@ -3724,9 +4185,23 @@ const StudentView = ({
 
       {/* 차시 선택 */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>
-          차시 선택:
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <label style={{ fontSize: '16px', fontWeight: '500' }}>
+            차시 선택:
+          </label>
+          {getLessonScore && (
+            <span style={{
+              fontSize: '14px',
+              padding: '4px 8px',
+              backgroundColor: '#06b6d4',
+              color: 'white',
+              borderRadius: '12px',
+              fontWeight: '500'
+            }}>
+              {currentLesson}차시: {getLessonScore(currentLesson)}점
+            </span>
+          )}
+        </div>
         <select 
           value={currentLesson}
           onChange={(e) => onLessonChange(parseInt(e.target.value))}
@@ -3758,7 +4233,6 @@ const StudentView = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {problems.map((problem, index) => {
           const status = problemStatus[problem.id];
-          const isWorking = status?.status === 'solving';
           const isCompleted = status?.status === 'solved';
           const stars = status?.stars || 0;
           
@@ -3791,7 +4265,6 @@ const StudentView = ({
                 <span style={{ fontSize: '16px', fontWeight: '500' }}>{problem.title}</span>
                 
                 {/* 상태 표시 */}
-                {isWorking && status?.code && <span title="풀고 있는 문제">🐌</span>}
                 {isCompleted && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                     {stars === 0 ? (
@@ -4047,12 +4520,18 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
   const editorRef = React.useRef(null);
   const decorationsRef = React.useRef([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const lastCursorPositionRef = React.useRef(null);
+  const previousCodeRef = React.useRef(code);
+  const isTypingRef = React.useRef(false);
+  const lastChangeTimeRef = React.useRef(0);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     
     // 네트워크 환경에서도 확실하게 C언어 지원 보장
     console.log('🎨 Monaco Editor 초기화 중...');
+    console.log('📝 에디터 읽기 전용 상태:', readOnly);
+    console.log('📝 에디터 옵션 확인:', editor.getRawOptions());
     setIsLoading(false); // 로딩 완료
     
     // C언어 언어 정의 강화 (네트워크 환경 대응)
@@ -4147,23 +4626,26 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
     
     // C언어 테마 설정 (네트워크 환경에서도 확실하게)
     monaco.editor.defineTheme('custom-theme', {
-      base: 'vs',
+      base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '22c55e', fontStyle: 'italic' }, // 주석 연두색
-        { token: 'string', foreground: 'f59e0b' }, // 문자열 노란색  
-        { token: 'keyword', foreground: '3b82f6', fontStyle: 'bold' }, // 키워드 파란색
-        { token: 'number', foreground: 'ef4444' }, // 숫자 빨간색
-        { token: 'number.hex', foreground: 'ef4444' }, // 16진수
-        { token: 'number.float', foreground: 'ef4444' }, // 실수
-        { token: 'identifier', foreground: '000000' }, // 일반 텍스트 검정색
-        { token: 'operator', foreground: '8b5cf6' }, // 연산자 보라색
+        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' }, // 주석 연두색
+        { token: 'string', foreground: 'CE9178' }, // 문자열 주황색  
+        { token: 'keyword', foreground: '569CD6', fontStyle: 'bold' }, // 키워드 파란색
+        { token: 'number', foreground: 'B5CEA8' }, // 숫자 연두색
+        { token: 'number.hex', foreground: 'B5CEA8' }, // 16진수
+        { token: 'number.float', foreground: 'B5CEA8' }, // 실수
+        { token: 'identifier', foreground: '9CDCFE' }, // 식별자 하늘색
+        { token: 'operator', foreground: 'D4D4D4' }, // 연산자 회색
+        { token: 'type', foreground: '4EC9B0' }, // 타입 청록색
       ],
       colors: {
-        'editor.background': '#ffffff',
-        'editor.foreground': '#000000',
-        'editorLineNumber.foreground': '#6b7280',
-        'editorLineNumber.activeForeground': '#374151',
+        'editor.background': '#1e1e1e',
+        'editor.foreground': '#d4d4d4',
+        'editorLineNumber.foreground': '#858585',
+        'editorLineNumber.activeForeground': '#ffffff',
+        'editor.lineHighlightBackground': '#2d2d30',
+        'editor.selectionBackground': '#264f78'
       }
     });
 
@@ -4236,33 +4718,46 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
         monaco.editor.setTheme('custom-theme');
       }
       
-      // 플레이스홀더 텍스트 자동 삭제 기능
-      const currentValue = currentModel.getValue();
+      // 플레이스홀더 자동 삭제 비활성화 - 커서 위치 문제 해결
+      console.log('🚫 포커스 시 플레이스홀더 자동 삭제 비활성화');
+    });
+    
+    // 키보드와 마우스 이벤트 구분을 위한 이벤트 리스너 추가
+    editor.onKeyDown((e) => {
+      isTypingRef.current = true;
+      lastChangeTimeRef.current = Date.now();
+      console.log('⌨️ 키보드 입력 감지:', e.code);
       
-      // 플레이스홀더 텍스트들을 감지하고 자동 삭제
-      const placeholders = [
-        '// 여기에 코드를 작성하세요',
-        '// 여기에 코딩하세요', 
-        '// 코드를 작성하세요',
-        '//여기에 코드를 작성하세요',
-        '//여기에 코딩하세요'
-      ];
-      
-      let shouldUpdate = false;
-      let newValue = currentValue;
-      
-      placeholders.forEach(placeholder => {
-        if (newValue.includes(placeholder)) {
-          newValue = newValue.replace(placeholder, '').trim();
-          shouldUpdate = true;
-        }
-      });
-      
-      if (shouldUpdate) {
-        onChange(newValue); // 상위 컴포넌트 상태 업데이트
-        // 커서를 시작 위치로 이동
-        editor.setPosition({ lineNumber: 1, column: 1 });
+      // 실제 문자 입력 시 플레이스홀더 즉시 삭제
+      if (e.code && !e.code.startsWith('Arrow') && !e.code.startsWith('Control') && 
+          e.code !== 'Shift' && e.code !== 'Alt' && e.code !== 'Tab') {
+        
+        setTimeout(() => {
+          const model = editor.getModel();
+          if (model) {
+            const currentValue = model.getValue();
+            const standardPlaceholder = '// 여기에 코드를 입력하세요';
+            
+            if (currentValue.includes(standardPlaceholder)) {
+              console.log('🎯 표준 플레이스홀더 발견, 즉시 삭제');
+              
+              // 직접 모델 값 설정 - 커서 위치 유지됨
+              const currentPosition = editor.getPosition();
+              const newValue = currentValue.replace(standardPlaceholder, '');
+              model.setValue(newValue);
+              if (currentPosition) {
+                editor.setPosition(currentPosition);
+              }
+              console.log('✨ 표준 플레이스홀더 삭제 완료');
+            }
+          }
+        }, 10);
       }
+    });
+    
+    editor.onMouseDown(() => {
+      isTypingRef.current = false;
+      console.log('🖱️ 마우스 클릭 감지');
     });
     
     // 추가 이벤트들에서도 C언어 설정 유지
@@ -4632,6 +5127,11 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
     
     // 수정사항 하이라이팅 적용
     applyModificationHighlights(editor, monaco);
+    
+    // 커서 위치 추적 (클릭 시 위치 저장)
+    editor.onDidChangeCursorPosition((e) => {
+      lastCursorPositionRef.current = e.position;
+    });
   };
 
   // 선생님 수정사항 하이라이팅 함수
@@ -4653,8 +5153,43 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
     }
   }, [modifications]);
 
+  // code prop 변경 시 커서 위치 복원
+  React.useEffect(() => {
+    // 커서 위치 자동 복원 비활성화 - 클릭 시 커서가 임의로 이동하는 문제 해결
+    console.log('🚫 커서 자동 복원 비활성화 (클릭 위치 유지를 위해)');
+    
+    // 이전 코드 저장
+    previousCodeRef.current = code;
+  }, [code]);
+
   const handleEditorChange = (value) => {
-    onChange(value || '');
+    const currentTime = Date.now();
+    const isRecentKeyInput = isTypingRef.current && (currentTime - lastChangeTimeRef.current < 100);
+    
+    console.log('📝 에디터 변경 감지:', { 
+      타이핑: isTypingRef.current, 
+      최근키입력: isRecentKeyInput,
+      시간차이: currentTime - lastChangeTimeRef.current 
+    });
+    
+    let newValue = value || '';
+    let placeholderRemoved = false;
+    const savedCursorPosition = lastCursorPositionRef.current;
+    
+    // 표준 플레이스홀더 삭제 (백업)
+    const standardPlaceholder = '// 여기에 코드를 입력하세요';
+    if (newValue.includes(standardPlaceholder)) {
+      console.log('🎯 handleEditorChange에서 표준 플레이스홀더 발견');
+      newValue = newValue.replace(standardPlaceholder, '');
+      placeholderRemoved = true;
+      console.log('✨ 표준 플레이스홀더 삭제 완료');
+    }
+    
+    console.log('📤 최종 출력:', newValue);
+    onChange(newValue);
+    
+    // 이전 코드 참조 업데이트
+    previousCodeRef.current = newValue;
     
     // 네트워크 환경에서 타이핑할 때마다 C언어 설정 유지
     if (editorRef.current) {
@@ -4715,10 +5250,14 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
       </div>
       
       <Editor
-        height="200px"
+        height="400px"
         language="c"
         value={code}
-        onChange={handleEditorChange}
+        onChange={(value) => {
+          console.log('🎹 Monaco Editor onChange 직접 호출됨! 값:', value);
+          console.log('🔍 읽기 전용 모드:', readOnly);
+          handleEditorChange(value);
+        }}
         onMount={handleEditorDidMount}
         options={{
           readOnly: readOnly,
