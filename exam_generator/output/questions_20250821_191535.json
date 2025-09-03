@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "created_at": "2025-08-21T19:15:35.152727",
+    "total_questions": 2,
+    "version": "1.0",
+    "source_file": "sample_input.txt",
+    "difficulty": "중",
+    "question_type": "정의형",
+    "generator": "hybrid",
+    "quality_checked": true
+  },
+  "questions": [
+    {
+      "question": "본문의 주제로 가장 적절한 것은?",
+      "options": [
+        "주제 1",
+        "주제 2",
+        "주제 3",
+        "주제 4"
+      ],
+      "answer": 0,
+      "explanation": "본문을 종합적으로 이해해야 합니다.",
+      "difficulty": "중",
+      "question_type": "정의형"
+    },
+    {
+      "question": "정보처리기사란 무엇인가?",
+      "options": [
+        "한국산업인력공단에서 시행하는 국가기술자격 시험으로, 정보시스템의 분석, 설계, 구현, 시험, 운영 및 유지보수와 관련된 전문 기술을 평가하는 자격증",
+        "추가 선택지 2",
+        "추가 선택지 3",
+        "추가 선택지 4"
+      ],
+      "answer": 0,
+      "explanation": "정보처리기사의 올바른 정의는 '한국산업인력공단에서 시행하는 국가기술자격 시험으로, 정보시스템의 분석, 설계, 구현, 시험, 운영 및 유지보수와 관련된 전문 기술을 평가하는 자격증'입니다.",
+      "difficulty": "중",
+      "question_type": "정의형"
+    }
+  ]
+}

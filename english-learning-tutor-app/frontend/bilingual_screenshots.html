@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영어학습앱 프론트엔드 화면 - 한/영 버전</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+        
+        .language-toggle {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .toggle-btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .toggle-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .screen-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .version-header {
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+            border-radius: 12px;
+        }
+        
+        .screen-card {
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .screen-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .screen-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.0rem;
+            text-align: center;
+        }
+        
+        .phone-frame {
+            background: #000;
+            padding: 15px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+        }
+        
+        .phone-screen {
+            width: 280px;
+            height: 480px;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .status-bar {
+            height: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            color: white;
+            font-size: 10px;
+        }
+        
+        .screen-content {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+        
+        /* Welcome Screen */
+        .welcome-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .welcome-logo {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .welcome-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .feature-list {
+            margin-bottom: 30px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 15px;
+        }
+        
+        .feature-icon {
+            font-size: 1.2rem;
+            margin-right: 12px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border-radius: 20px;
+            border: none;
+            font-weight: 600;
+            margin: 4px;
+            cursor: pointer;
+            min-width: 80px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        /* Other screen styles - simplified for space */
+        .login-screen {
+            padding: 20px 15px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .login-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .login-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.85rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .demo-account {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .practice-screen {
+            padding: 15px;
+        }
+        
+        .screen-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .category-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            margin-bottom: 12px;
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .category-icon {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+        
+        .category-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .category-desc {
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+        
+        .category-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #e1e5e9;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            margin: 0 4px;
+        }
+        
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .screen-pair {
+                grid-template-columns: 1fr;
+            }
+            
+            .screens-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 영어학습 앱 프론트엔드</h1>
+        <p class="subtitle">English Learning App Frontend - Korean & English Versions</p>
+        
+        <!-- Screen 1: Welcome Screen -->
+        <div class="screen-pair">
+            <div class="version-header">🇰🇷 한국어 버전 (Korean Version)</div>
+            <div class="version-header">🇺🇸 영어 버전 (English Version)</div>
+            
+            <div class="screen-card">
+                <div class="screen-header">1. 환영 화면 (Welcome Screen)</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content welcome-screen">
+                            <div class="welcome-logo">🎓</div>
+                            <div class="welcome-title">영어 학습의 새로운 시작</div>
+                            <div class="welcome-subtitle">대구 지역 최고의 영어 학습 앱</div>
+                            <div class="feature-list">
+                                <div class="feature-item">
+                                    <span class="feature-icon">🤖</span>
+                                    <span>AI 맞춤 학습</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">👨‍🏫</span>
+                                    <span>전문 강사 연결</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">📊</span>
+                                    <span>실시간 진도 추적</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🗣️</span>
+                                    <span>음성 인식 연습</span>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary">로그인</button>
+                                <button class="btn btn-secondary">회원가입</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="screen-card">
+                <div class="screen-header">1. Welcome Screen</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content welcome-screen">
+                            <div class="welcome-logo">🎓</div>
+                            <div class="welcome-title">Start Your English Journey</div>
+                            <div class="welcome-subtitle">Daegu's Best English Learning App</div>
+                            <div class="feature-list">
+                                <div class="feature-item">
+                                    <span class="feature-icon">🤖</span>
+                                    <span>AI-Powered Learning</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">👨‍🏫</span>
+                                    <span>Expert Tutor Connection</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">📊</span>
+                                    <span>Real-time Progress Tracking</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🗣️</span>
+                                    <span>Voice Recognition Practice</span>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary">Login</button>
+                                <button class="btn btn-secondary">Sign Up</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 2: Login Screen -->
+        <div class="screen-pair">
+            <div class="version-header">🇰🇷 로그인 화면</div>
+            <div class="version-header">🇺🇸 Login Screen</div>
+            
+            <div class="screen-card">
+                <div class="screen-header">2. 로그인 화면</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content login-screen">
+                            <div class="login-header">
+                                <div class="login-title">다시 만나서 반가워요!</div>
+                                <div class="login-subtitle">계정으로 로그인하세요</div>
+                            </div>
+                            
+                            <div class="demo-account">
+                                <strong>🎯 데모 계정</strong><br>
+                                <small>이메일: demo@example.com<br>비밀번호: demo123</small>
+                            </div>
+                            
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">이메일</label>
+                                    <input type="email" class="form-input" placeholder="이메일을 입력하세요" value="demo@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">비밀번호</label>
+                                    <input type="password" class="form-input" placeholder="비밀번호를 입력하세요" value="demo123">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">로그인</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="screen-card">
+                <div class="screen-header">2. Login Screen</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content login-screen">
+                            <div class="login-header">
+                                <div class="login-title">Welcome Back!</div>
+                                <div class="login-subtitle">Sign in to your account</div>
+                            </div>
+                            
+                            <div class="demo-account">
+                                <strong>🎯 Demo Account</strong><br>
+                                <small>Email: demo@example.com<br>Password: demo123</small>
+                            </div>
+                            
+                            <form>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" placeholder="Enter your email" value="demo@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-input" placeholder="Enter your password" value="demo123">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Sign In</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 3: Practice Screen -->
+        <div class="screen-pair">
+            <div class="version-header">🇰🇷 연습 화면</div>
+            <div class="version-header">🇺🇸 Practice Screen</div>
+            
+            <div class="screen-card">
+                <div class="screen-header">3. 연습 화면</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content practice-screen">
+                            <div class="screen-title">🎯 연습하기</div>
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">☕</span>
+                                    <span class="category-title">일상 대화</span>
+                                </div>
+                                <div class="category-desc">카페, 식당, 쇼핑 등 일상적인 상황</div>
+                                <div class="category-meta">
+                                    <span>초급 난이도</span>
+                                    <span>8개 상황</span>
+                                </div>
+                            </div>
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">💼</span>
+                                    <span class="category-title">비즈니스 영어</span>
+                                </div>
+                                <div class="category-desc">회의, 프레젠테이션, 이메일 등</div>
+                                <div class="category-meta">
+                                    <span>중급 난이도</span>
+                                    <span>12개 상황</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">빠른 연습 시작</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="screen-card">
+                <div class="screen-header">3. Practice Screen</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content practice-screen">
+                            <div class="screen-title">🎯 Practice</div>
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">☕</span>
+                                    <span class="category-title">Daily Conversation</span>
+                                </div>
+                                <div class="category-desc">Cafe, restaurant, shopping scenarios</div>
+                                <div class="category-meta">
+                                    <span>Beginner Level</span>
+                                    <span>8 scenarios</span>
+                                </div>
+                            </div>
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">💼</span>
+                                    <span class="category-title">Business English</span>
+                                </div>
+                                <div class="category-desc">Meetings, presentations, emails</div>
+                                <div class="category-meta">
+                                    <span>Intermediate Level</span>
+                                    <span>12 scenarios</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">Start Quick Practice</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 4: Progress Screen -->
+        <div class="screen-pair">
+            <div class="version-header">🇰🇷 진도 화면</div>
+            <div class="version-header">🇺🇸 Progress Screen</div>
+            
+            <div class="screen-card">
+                <div class="screen-header">4. 진도 화면</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content practice-screen">
+                            <div class="screen-title">📊 학습 진도</div>
+                            
+                            <div style="background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                                <div style="text-align: center; margin-bottom: 15px;">
+                                    <div style="font-size: 1.1rem; font-weight: 600; color: #333;">중급 레벨</div>
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 10px;">67% 완료</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 67%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px;">
+                                <div class="stat-card">
+                                    <div class="stat-number">1,234</div>
+                                    <div class="stat-label">총 포인트</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">7일</div>
+                                    <div class="stat-label">연속 학습</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">42</div>
+                                    <div class="stat-label">완료한 연습</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: white; border-radius: 10px; padding: 15px; margin-top: 15px;">
+                                <div style="font-weight: 600; margin-bottom: 12px; font-size: 0.9rem;">🎯 스킬별 진도</div>
+                                
+                                <div style="margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-size: 0.8rem;">문법</span>
+                                        <span style="color: #667eea; font-weight: 600; font-size: 0.8rem;">78% (+5)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 78%;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-size: 0.8rem;">어휘</span>
+                                        <span style="color: #667eea; font-weight: 600; font-size: 0.8rem;">84% (+3)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 84%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="screen-card">
+                <div class="screen-header">4. Progress Screen</div>
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="status-bar">
+                            <span>9:41</span>
+                            <span>📶 📡 🔋</span>
+                        </div>
+                        <div class="screen-content practice-screen">
+                            <div class="screen-title">📊 Learning Progress</div>
+                            
+                            <div style="background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                                <div style="text-align: center; margin-bottom: 15px;">
+                                    <div style="font-size: 1.1rem; font-weight: 600; color: #333;">Intermediate Level</div>
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 10px;">67% Complete</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 67%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px;">
+                                <div class="stat-card">
+                                    <div class="stat-number">1,234</div>
+                                    <div class="stat-label">Total Points</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">7 days</div>
+                                    <div class="stat-label">Streak</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">42</div>
+                                    <div class="stat-label">Completed</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: white; border-radius: 10px; padding: 15px; margin-top: 15px;">
+                                <div style="font-weight: 600; margin-bottom: 12px; font-size: 0.9rem;">🎯 Skills Breakdown</div>
+                                
+                                <div style="margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-size: 0.8rem;">Grammar</span>
+                                        <span style="color: #667eea; font-weight: 600; font-size: 0.8rem;">78% (+5)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 78%;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-size: 0.8rem;">Vocabulary</span>
+                                        <span style="color: #667eea; font-weight: 600; font-size: 0.8rem;">84% (+3)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 84%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding: 25px; background: white; border-radius: 16px;">
+            <h2 style="color: #333; margin-bottom: 15px;">🎉 프론트엔드 100% 완성! / Frontend 100% Complete!</h2>
+            <p style="color: #666; font-size: 1.0rem; margin-bottom: 20px;">
+                모든 주요 화면이 한국어와 영어 버전으로 완성되었습니다.<br>
+                All major screens have been completed in both Korean and English versions.
+            </p>
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                <strong>🔗 다음 단계 / Next Steps:</strong>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div>
+                        <h4 style="color: #667eea; margin-bottom: 10px;">🇰🇷 한국어</h4>
+                        <ul style="text-align: left; margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li>백엔드 API 연결</li>
+                            <li>실시간 AI 대화 활성화</li>
+                            <li>강사 예약 시스템 연동</li>
+                            <li>진도 데이터 동기화</li>
+                            <li>최종 통합 테스트</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #667eea; margin-bottom: 10px;">🇺🇸 English</h4>
+                        <ul style="text-align: left; margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                            <li>Connect Backend APIs</li>
+                            <li>Activate Real-time AI Chat</li>
+                            <li>Integrate Tutor Booking</li>
+                            <li>Synchronize Progress Data</li>
+                            <li>Final Integration Testing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
