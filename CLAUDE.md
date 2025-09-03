@@ -275,68 +275,168 @@ npm run
 ### English Learning Tutor App
 **위치**: `C:\Users\sintt\english-learning-tutor-app\`
 
-#### 개발 서버 실행
-```bash
-cd english-learning-tutor-app
-npm start                    # 프로덕션 서버 시작
-npm run dev                  # 개발 서버 (nodemon 사용)
+#### 아키텍처 개요
+```
+english-learning-tutor-app/
+├── backend/              # Express.js API 서버 (Port 3000)
+│   ├── src/
+│   │   ├── server.js    # 메인 서버 엔트리포인트
+│   │   ├── routes/      # API 라우트 (auth, tutors, sessions 등)
+│   │   ├── services/    # 비즈니스 로직 (OpenAI, Socket.io)
+│   │   └── models/      # 데이터베이스 모델
+│   └── package.json     # 백엔드 의존성 및 스크립트
+├── frontend/            # React Native 모바일 앱
+│   └── src/screens/     # 화면별 컴포넌트
+├── web-app/            # 웹 버전 (개발/테스트용)
+│   ├── index.html      # 메인 웹 인터페이스
+│   ├── app.js          # Socket.io 클라이언트 로직
+│   └── styles.css      # 웹 앱 스타일링
+└── docs/               # 기술 문서
 ```
 
-#### 테스트 및 빌드
+#### 백엔드 개발 명령어 (핵심)
 ```bash
-npm test                     # Jest 테스트 실행
-npm run build                # 클라이언트 + 서버 빌드
+cd english-learning-tutor-app/backend
+
+# 개발 서버
+npm run dev                  # 개발 서버 (nodemon, 자동 재시작)
+npm start                    # 프로덕션 서버
+
+# 데이터베이스 (Knex.js)
+npm run db:migrate:latest    # 마이그레이션 실행
+npm run db:seed             # 초기 데이터 삽입
+npm run db:reset            # DB 초기화 + 시드
+
+# 테스트 및 품질 검사
+npm test                    # Jest 테스트 전체 실행
+npm run test:watch         # 테스트 watch 모드
+npm run test:coverage      # 커버리지 리포트 생성
+npm run lint               # ESLint 검사
+npm run lint:fix           # ESLint 자동 수정
 ```
 
-#### 웹 앱 접속
-- **메인 서비스**: http://localhost:3000
-- **웹 앱 버전**: http://localhost:3000/web-app/
+#### 웹 앱 접속 URL
+- **백엔드 API**: http://localhost:3000/api
+- **웹 앱**: http://localhost:3000/web-app/
+- **테스트 페이지**: http://localhost:3000/web-app/test.html
 
-### Python 스크립트 실행
+#### 핵심 기술 스택
+- **백엔드**: Node.js + Express + SQLite(개발) + PostgreSQL(운영)
+- **실시간 통신**: Socket.io (AI 대화, 튜터 매칭)
+- **AI 연동**: OpenAI API (발음 교정, 대화 연습)
+- **인증**: JWT + bcryptjs
+- **데이터베이스 ORM**: Knex.js
 
-#### YouTube 분석 도구
+### Python 프로젝트들
+
+#### 메인 스크립트들 (루트 디렉토리)
 ```bash
-python simple_analysis.py          # YouTube 자막 자동 분석
-```
+# YouTube 분석 자동화
+python simple_analysis.py          # 자막 다운로드 → 분석 → 정리
 
-#### 크립토 분석 도구들
-```bash
-python auto_crypto_analysis.py     # 자동 크립토 분석
-python upbit_rsi_monitor.py        # Upbit RSI 모니터링
+# 암호화폐 분석 도구들
+python auto_crypto_analysis.py     # 자동 크립토 분석 대시보드
+python upbit_rsi_monitor.py        # Upbit RSI 모니터링 + 알림
+python run_monitor.py              # 통합 모니터링 시스템
+
+# 유틸리티
+python chat_id_finder.py           # 텔레그램 채팅 ID 확인
+python naver_screenshot.py         # 네이버 페이지 스크린샷
 ```
 
 #### 출결 알림 시스템
+**위치**: `C:\Users\sintt\attendance_notifier\`
 ```bash
 cd attendance_notifier
-python run.py                # 출결 알림 프로그램 실행
-python test_app.py          # 테스트 모드 실행
+
+# 메인 실행
+python run.py                      # 실제 알림 시스템 실행
+python test_app.py                # 테스트 모드 (DB 연결 확인)
+
+# 의존성: Streamlit + SQLite + 텔레그램 봇
+```
+
+#### 시험 문제 생성기
+**위치**: `C:\Users\sintt\exam_generator\`
+```bash
+cd exam_generator
+
+# Streamlit 웹 앱 실행
+streamlit run app_simple.py       # 간단 버전 (권장)
+streamlit run app.py              # 전체 기능 버전
+python test_generator.py          # CLI 테스트
+
+# 접속 URL: http://localhost:8501
+```
+
+#### 퍼즈 암호화폐 분석 도구
+**위치**: `C:\Users\sintt\puzzle_crypto_analysis\`
+```bash
+cd puzzle_crypto_analysis
+
+# Streamlit 대시보드
+streamlit run app_simple.py       # 메인 분석 도구
+python main.py                    # CLI 분석
+python test_basic.py              # 기본 기능 테스트
+
+# 배치 실행 (Windows)
+run_web.bat                       # 웹 앱 시작
+run_monitor.bat                   # 모니터링 시작
 ```
 
 ---
 
-## 🗂️ 주요 프로젝트 구조
+## 🗂️ 코드베이스 아키텍처 개요
 
-### English Learning Tutor App
+### 프로젝트 분류 및 구조
+
+#### 🎓 메인 애플리케이션: English Learning Tutor App
+**목적**: AI 기반 영어 학습 + 실제 튜터 매칭 플랫폼
 ```
 english-learning-tutor-app/
-├── backend/          # Express.js 백엔드 서버
-├── frontend/         # React Native 모바일 앱
-├── web-app/          # 웹 버전 (HTML/CSS/JS)
-├── ai-service/       # OpenAI API 연동 서비스
-├── database/         # SQLite 데이터베이스 스키마
-└── docs/             # 프로젝트 문서들
+├── backend/src/
+│   ├── server.js              # Express 서버 + Socket.io
+│   ├── routes/                # REST API (인증, 세션, 튜터매칭)
+│   ├── services/
+│   │   ├── openaiService.js   # AI 대화/발음 교정
+│   │   └── socketService.js   # 실시간 통신 관리
+│   └── database/migrations/   # Knex.js DB 스키마
+├── web-app/                   # 개발/테스트용 웹 클라이언트
+└── frontend/                  # React Native (미완성)
 ```
 
-### 루트 디렉토리 주요 파일
+#### 📊 Python 분석 도구들
+**공통 특징**: Streamlit 기반 웹 대시보드 + CLI 스크립트
 ```
-C:\Users\sintt\
-├── simple_analysis.py          # YouTube 분석 자동화
-├── auto_crypto_analysis.py     # 크립토 분석 도구
-├── upbit_rsi_monitor.py        # RSI 모니터링
-├── attendance_notifier/        # 출결 알림 시스템
-├── PROJECTS.md                 # 프로젝트 현황 관리
-└── CLAUDE.md                   # Claude Code 설정
+├── puzzle_crypto_analysis/    # 암호화폐 기술분석 (퍼즈 전략)
+├── exam_generator/           # AI 기반 시험문제 생성기  
+├── attendance_notifier/      # 출결 관리 + 텔레그램 알림
+└── autobot/                 # 암호화폐 자동매매 봇 (다수 거래소)
 ```
+
+#### 🔧 유틸리티 스크립트들 (루트)
+```
+├── simple_analysis.py        # YouTube 자막 분석 자동화
+├── auto_crypto_analysis.py   # 통합 크립토 분석
+├── upbit_rsi_monitor.py     # RSI 지표 모니터링
+├── run_monitor.py           # 전체 모니터링 오케스트레이터
+└── chat_id_finder.py        # 텔레그램 봇 설정 도구
+```
+
+### 기술 스택 매트릭스
+| 프로젝트 | 언어 | 프레임워크 | 데이터베이스 | 특징 |
+|---------|------|------------|-------------|------|
+| English App | Node.js | Express + Socket.io | SQLite/PostgreSQL | 실시간 AI 대화 |
+| 크립토 분석 | Python | Streamlit | 없음/CSV | 대시보드 + 알림 |
+| 시험 생성기 | Python | Streamlit | JSON | OpenAI API 연동 |
+| 출결 시스템 | Python | Streamlit | SQLite | 텔레그램 봇 |
+| 자동매매 | Python | 없음 | 로그파일 | 거래소 API |
+
+### 공통 의존성 및 설정
+- **Python**: requirements.txt (173개 패키지) - AI, 데이터분석, 웹앱 포함
+- **Node.js**: 각 프로젝트별 package.json
+- **API Keys**: 대부분 .env 파일로 관리 (OpenAI, 거래소, 텔레그램)
+- **배포**: 주로 로컬 실행, Streamlit Cloud 일부 지원
 
 ---
 
