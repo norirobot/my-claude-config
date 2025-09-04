@@ -135,6 +135,99 @@ When user mentions YouTube analysis or script download:
 
 This configuration ensures optimal Claude Code performance and user experience.
 
+## 🐛 일반적 오류 패턴 & 해결법
+
+**목적**: 반복되는 개발 오류를 사전에 방지하고 빠르게 해결하기 위한 패턴 라이브러리
+
+### React/MUI 관련 오류 ⭐⭐⭐
+
+#### IconButton Import 오류
+- **증상**: `does not provide an export named 'IconButton'` 오류
+- **원인**: `@mui/icons-material`에서 IconButton을 import 시도
+- **해결법**: `@mui/material`에서 import 해야 함
+```typescript
+// ❌ 잘못된 방법
+import { IconButton } from '@mui/icons-material'
+
+// ✅ 올바른 방법  
+import { IconButton } from '@mui/material'
+```
+
+#### MUI 컴포넌트 Import 체크리스트
+- **Icons**: `@mui/icons-material` (HomeIcon, SettingsIcon 등)
+- **Components**: `@mui/material` (Button, IconButton, Box 등)
+- **Lab Components**: `@mui/lab` (LoadingButton 등)
+
+### React Router 관련 오류 ⭐⭐
+
+#### 중첩 Routes 구조 오류
+- **증상**: 페이지가 렌더링되지 않음, 흰 화면
+- **원인**: Routes 안에 Routes를 중첩하여 사용
+- **해결법**: 각 Route를 개별적으로 Layout으로 감싸기
+```typescript
+// ❌ 잘못된 중첩 구조
+<Route path="/*" element={
+  <Layout>
+    <Routes>
+      <Route path="/dashboard" element={<DashboardPage />} />
+    </Routes>
+  </Layout>
+} />
+
+// ✅ 올바른 개별 구조
+<Route path="/dashboard" element={
+  <Layout>
+    <DashboardPage />
+  </Layout>
+} />
+```
+
+### Redux/State 관리 오류 ⭐⭐
+
+#### 빈 Reducer 오류
+- **증상**: `Store does not have a valid reducer` 오류
+- **원인**: configureStore에 빈 객체나 undefined reducer 전달
+- **해결법**: 최소한 더미 reducer라도 추가
+```typescript
+// ❌ 빈 reducer 객체
+export const store = configureStore({
+  reducer: {}
+})
+
+// ✅ 더미 reducer 추가
+const dummySlice = {
+  name: 'app',
+  initialState: { initialized: true },
+  reducers: {}
+}
+
+export const store = configureStore({
+  reducer: {
+    app: (state = dummySlice.initialState) => state
+  }
+})
+```
+
+### 디버깅 체크리스트
+
+#### 흰 화면 문제 해결 순서
+1. **브라우저 콘솔 확인** - F12 → Console 탭
+2. **Import/Export 오류 확인** - 가장 흔한 원인
+3. **라우팅 구조 점검** - 중첩 Routes 문제
+4. **Redux Store 상태 확인** - 빈 reducer 문제
+5. **컴포넌트별 단계적 테스트** - 임시 컴포넌트로 isolate
+
+### 예방 체크리스트
+
+#### 프로젝트 시작 시 필수 점검
+- [ ] package.json dependencies 확인
+- [ ] MUI import 경로 재확인 (@mui/material vs @mui/icons-material)  
+- [ ] 라우팅 구조 단순하게 설계
+- [ ] Redux store에 최소 1개 reducer 설정
+- [ ] ESLint/TypeScript 설정으로 사전 오류 방지
+
+---
+
 ## 🚫 할루시네이션 방지 필수 체크리스트
 
 **CRITICAL**: 모든 코드 작성 시 반드시 따라야 하는 검증 절차
