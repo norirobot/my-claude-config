@@ -26,6 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Auto-commit**: Always commit CLAUDE.md changes immediately after editing
 4. **Korean support**: Full Korean language support in all interactions
 5. **Tool optimization**: Use multiple tools efficiently in single responses
+6. **최상위 AI 모델 강제 사용**: 모든 프로그램 개발 시 반드시 최상위 모델(현재 Claude Sonnet 4) 사용. 사용량 한계 도달시에도 최고 품질 유지 필수
 
 ### Project Status Tracking
 6. **Auto-check projects**: When user asks about projects or seems lost, automatically read and display PROJECTS.md
