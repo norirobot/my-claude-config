@@ -21,27 +21,30 @@ import {
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from '../contexts/LanguageContext'
 import MeetuLogo from '../components/MeetuLogo'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
+  const { t } = useTranslation()
 
   const features = [
     {
       icon: <AIIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'AI 디지털 트윈 튜터',
-      description: '실제 튜터의 말투와 성격을 학습한 AI가 먼저 연습 상대가 됩니다'
+      title: t.home.features.aiTutor.title,
+      description: t.home.features.aiTutor.description
     },
     {
       icon: <MicIcon sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      title: '발음 분석 & 교정',
-      description: '음성 인식 기술로 발음을 정확하게 분석하고 즉시 피드백을 제공합니다'
+      title: t.home.features.pronunciation.title,
+      description: t.home.features.pronunciation.description
     },
     {
       icon: <GroupsIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: '한국 거주 외국인 튜터',
-      description: '시차 없이 실시간으로 한국 거주 원어민 튜터와 대화할 수 있습니다'
+      title: t.home.features.realTutors.title,
+      description: t.home.features.realTutors.description
     }
   ]
 
@@ -71,6 +74,18 @@ const HomePage: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* 헤더 - 언어 전환 버튼 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 10
+        }}
+      >
+        <LanguageSwitcher variant="compact" />
+      </Box>
+
       {/* 히어로 섹션 */}
       <Box
         sx={{
@@ -85,17 +100,15 @@ const HomePage: React.FC = () => {
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="h1" sx={{ mb: 3, fontWeight: 700 }}>
-                AI로 먼저 연습하고
+                {t.home.heroTitle}
                 <br />
                 <Box component="span" sx={{ color: 'secondary.main' }}>
-                  실제 튜터
-                </Box>
-                와 대화하세요
+                  {t.home.heroSubtitle}
+                </Box>{' '}
+                {t.home.heroTitleEnd}
               </Typography>
               <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-                세계 유일의 디지털 트윈 영어 학습법으로
-                <br />
-                외국인과의 대화 두려움을 완전히 극복하세요
+                {t.home.heroDescription}
               </Typography>
               <Stack direction="row" spacing={2}>
                 <Button
@@ -111,7 +124,7 @@ const HomePage: React.FC = () => {
                     fontWeight: 600
                   }}
                 >
-                  {isAuthenticated ? '대시보드로 가기' : '무료로 시작하기'}
+                  {isAuthenticated ? t.home.dashboardButton : t.home.startButton}
                 </Button>
                 <Button
                   variant="outlined"
@@ -128,7 +141,7 @@ const HomePage: React.FC = () => {
                     }
                   }}
                 >
-                  데모 보기
+                  {t.home.demoButton}
                 </Button>
               </Stack>
             </Grid>
@@ -159,10 +172,10 @@ const HomePage: React.FC = () => {
       {/* 핵심 기능 섹션 */}
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Typography variant="h2" align="center" sx={{ mb: 2 }}>
-          왜 AI 영어 튜터인가요?
+          {t.home.featuresTitle}
         </Typography>
         <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 6 }}>
-          기존 영어 학습의 한계를 완전히 뛰어넘는 혁신적인 방법
+          {t.home.featuresSubtitle}
         </Typography>
 
         <Grid container spacing={4}>
@@ -200,10 +213,10 @@ const HomePage: React.FC = () => {
       <Box sx={{ bgcolor: 'grey.50', py: 8 }}>
         <Container maxWidth="lg">
           <Typography variant="h2" align="center" sx={{ mb: 2 }}>
-            검증된 한국 거주 튜터들
+            {t.home.tutorsTitle}
           </Typography>
           <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 6 }}>
-            시차 걱정 없이 언제든 만날 수 있는 원어민 튜터들
+            {t.home.tutorsSubtitle}
           </Typography>
 
           <Grid container spacing={4}>
@@ -272,12 +285,15 @@ const HomePage: React.FC = () => {
             }}
           >
             <Typography variant="h3" sx={{ mb: 2, fontWeight: 700 }}>
-              지금 바로 시작하세요!
+              {t.home.ctaTitle}
             </Typography>
             <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-              첫 AI 대화는 무료입니다. 
-              <br />
-              5분만 투자해서 영어 실력의 변화를 경험해보세요.
+              {t.home.ctaDescription.split('\n').map((line, index) => (
+                <span key={index}>
+                  {line}
+                  {index < t.home.ctaDescription.split('\n').length - 1 && <br />}
+                </span>
+              ))}
             </Typography>
             <Button
               variant="contained"
@@ -295,7 +311,7 @@ const HomePage: React.FC = () => {
               }}
               onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
             >
-              {isAuthenticated ? '지금 시작하기' : '무료 체험 시작하기'}
+              {isAuthenticated ? t.home.ctaButtonAuth : t.home.ctaButton}
             </Button>
           </Card>
         </Container>
