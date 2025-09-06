@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음성 인식 & 발음 교정 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .auth-section, .voice-section, .results-section, .stats-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+        }
+
+        .voice-section {
+            text-align: center;
+        }
+
+        .practice-text {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #4ecdc4;
+        }
+
+        .practice-text h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .practice-text p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .expected-text {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .voice-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .record-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(255,107,107,0.3);
+            min-width: 140px;
+        }
+
+        .record-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255,107,107,0.4);
+        }
+
+        .record-btn.recording {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .record-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .audio-controls {
+            display: none;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .audio-controls button {
+            background: #74b9ff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-controls button:hover {
+            background: #0984e3;
+            transform: translateY(-2px);
+        }
+
+        .recording-status {
+            margin: 20px 0;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .analysis-results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .score-card {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(116,185,255,0.3);
+        }
+
+        .score-card h4 {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .score-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .feedback-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .feedback-section h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feedback-list {
+            list-style: none;
+        }
+
+        .feedback-list li {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-left: 4px solid #4ecdc4;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .word-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .word-score {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 2px solid transparent;
+        }
+
+        .word-score.correct {
+            border-color: #00b894;
+        }
+
+        .word-score.incorrect {
+            border-color: #e74c3c;
+        }
+
+        .word-text {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .word-score-value {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .auth-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input[type="email"], input[type="password"] {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(116,185,255,0.3);
+        }
+
+        .status {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffeaea;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .success {
+            color: #00b894;
+            background: #e8f5f3;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 2s linear infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .practice-scenarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .scenario-card {
+            background: linear-gradient(135deg, #a8e6cf, #4ecdc4);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(78,205,196,0.3);
+        }
+
+        .scenario-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(78,205,196,0.4);
+        }
+
+        .scenario-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .scenario-card p {
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 음성 인식 & 발음 교정</h1>
+        
+        <!-- 인증 섹션 -->
+        <div class="auth-section">
+            <div class="auth-controls">
+                <input type="email" id="email" placeholder="이메일" value="test@example.com">
+                <input type="password" id="password" placeholder="비밀번호" value="test123">
+                <button onclick="login()">로그인</button>
+                <span id="authStatus" class="status">로그인이 필요합니다</span>
+            </div>
+        </div>
+
+        <!-- 연습 시나리오 선택 -->
+        <div class="voice-section">
+            <h2>🗣️ 연습 시나리오 선택</h2>
+            <div class="practice-scenarios" id="scenarios">
+                <!-- 시나리오들이 여기에 동적으로 로드됩니다 -->
+            </div>
+        </div>
+
+        <!-- 음성 연습 섹션 -->
+        <div class="voice-section hidden" id="practiceSection">
+            <h2>🎯 발음 연습하기</h2>
+            
+            <div class="practice-text">
+                <h3>연습할 문장:</h3>
+                <p class="expected-text" id="practiceText">문장이 선택되면 여기에 표시됩니다</p>
+                <p style="color: #666; font-size: 0.9em;">📝 위 문장을 또렷하게 발음해보세요</p>
+            </div>
+
+            <div class="voice-controls">
+                <button id="recordBtn" class="record-btn" onclick="toggleRecording()">
+                    🎤 녹음 시작
+                </button>
+                <button onclick="playExample()" style="background: #00b894;">
+                    🔊 예시 듣기
+                </button>
+            </div>
+
+            <div class="audio-controls" id="audioControls">
+                <button onclick="playRecording()">▶️ 재생</button>
+                <button onclick="analyzeVoice()">🔍 분석하기</button>
+                <button onclick="resetRecording()">🗑️ 다시 녹음</button>
+            </div>
+
+            <div class="recording-status" id="recordingStatus"></div>
+        </div>
+
+        <!-- 분석 결과 섹션 -->
+        <div class="results-section hidden" id="resultsSection">
+            <h2>📊 분석 결과</h2>
+            
+            <div class="analysis-results" id="analysisResults">
+                <div class="scores-grid" id="scoresGrid">
+                    <!-- 점수 카드들이 여기에 표시됩니다 -->
+                </div>
+
+                <div class="feedback-section">
+                    <h4>💭 전체 평가</h4>
+                    <p id="overallAssessment"></p>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>👍 잘한 점들</h4>
+                    <ul class="feedback-list" id="strengths"></ul>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>💪 개선할 점들</h4>
+                    <ul class="feedback-list" id="improvements"></ul>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>💡 구체적 조언</h4>
+                    <ul class="feedback-list" id="tips"></ul>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>📝 단어별 분석</h4>
+                    <div class="word-analysis" id="wordAnalysis"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let authToken = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedBlob = null;
+        let isRecording = false;
+        let currentScenario = null;
+        let currentText = '';
+
+        const API_BASE = 'http://localhost:3002/api';
+
+        // 로그인 함수
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusEl = document.getElementById('authStatus');
+            
+            if (!email || !password) {
+                statusEl.textContent = '이메일과 비밀번호를 입력해주세요';
+                statusEl.className = 'error';
+                return;
+            }
+            
+            try {
+                statusEl.textContent = '로그인 중...';
+                statusEl.className = 'status';
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.token && data.user) {
+                    authToken = data.token;
+                    statusEl.textContent = `로그인 성공: ${data.user.name || email}`;
+                    statusEl.className = 'success';
+                    
+                    // 시나리오 로드
+                    loadScenarios();
+                } else {
+                    throw new Error(data.message || '로그인 실패');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                statusEl.textContent = `오류: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+
+        // 시나리오 로드
+        async function loadScenarios() {
+            try {
+                const response = await fetch(`${API_BASE}/situations/list`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.situations) {
+                    displayScenarios(data.situations);
+                }
+            } catch (error) {
+                console.error('Error loading scenarios:', error);
+            }
+        }
+
+        // 시나리오 표시
+        function displayScenarios(situations) {
+            const container = document.getElementById('scenarios');
+            container.innerHTML = '';
+            
+            situations.forEach(situation => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                card.innerHTML = `
+                    <h3>${situation.icon} ${situation.name}</h3>
+                    <p>${situation.name_ko}</p>
+                    <p style="font-size: 0.9em; opacity: 0.8;">
+                        숙련도: ${situation.mastery_level}% | 
+                        연습횟수: ${situation.practice_count}회
+                    </p>
+                `;
+                card.onclick = () => selectScenario(situation);
+                container.appendChild(card);
+            });
+        }
+
+        // 시나리오 선택
+        async function selectScenario(situation) {
+            currentScenario = situation;
+            
+            try {
+                // 해당 상황의 대화 데이터 로드
+                const response = await fetch(`${API_BASE}/situations/${situation.id}/dialogues`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.dialogues) {
+                    // 학생이 말해야 하는 첫 번째 대화 찾기
+                    const studentDialogue = data.dialogues.find(d => 
+                        d.speaker === 'student' && d.expected_response
+                    );
+                    
+                    if (studentDialogue) {
+                        currentText = studentDialogue.expected_response;
+                        document.getElementById('practiceText').textContent = currentText;
+                        document.getElementById('practiceSection').classList.remove('hidden');
+                        
+                        // 스크롤 이동
+                        document.getElementById('practiceSection').scrollIntoView({ 
+                            behavior: 'smooth' 
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading scenario details:', error);
+            }
+        }
+
+        // 마이크 권한 확인 및 녹음 시작/중지
+        async function toggleRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const statusEl = document.getElementById('recordingStatus');
+            
+            if (!isRecording) {
+                try {
+                    // 마이크 권한 요청
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100
+                        }
+                    });
+                    
+                    // MediaRecorder 설정
+                    mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm'
+                    });
+                    
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        stream.getTracks().forEach(track => track.stop());
+                        document.getElementById('audioControls').style.display = 'flex';
+                        statusEl.textContent = '녹음 완료! 재생하거나 분석해보세요.';
+                    };
+                    
+                    // 녹음 시작
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    recordBtn.textContent = '🛑 녹음 중지';
+                    recordBtn.classList.add('recording');
+                    statusEl.textContent = '🎤 녹음 중... 또렷하게 말해주세요!';
+                    
+                } catch (error) {
+                    console.error('Microphone error:', error);
+                    statusEl.textContent = '마이크 접근 권한이 필요합니다.';
+                    statusEl.className = 'error';
+                }
+            } else {
+                // 녹음 중지
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                isRecording = false;
+                recordBtn.textContent = '🎤 녹음 시작';
+                recordBtn.classList.remove('recording');
+            }
+        }
+
+        // 녹음 재생
+        function playRecording() {
+            if (recordedBlob) {
+                const audioUrl = URL.createObjectURL(recordedBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+            }
+        }
+
+        // 음성 분석
+        async function analyzeVoice() {
+            if (!recordedBlob || !currentText) return;
+            
+            const statusEl = document.getElementById('recordingStatus');
+            statusEl.textContent = '🔍 음성 분석 중...';
+            statusEl.className = 'loading';
+            
+            try {
+                const formData = new FormData();
+                formData.append('audio', recordedBlob, 'recording.webm');
+                formData.append('expectedText', currentText);
+                if (currentScenario) {
+                    formData.append('situationId', currentScenario.id);
+                }
+                
+                const response = await fetch(`${API_BASE}/voice/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.analysis) {
+                    displayAnalysisResults(data.analysis);
+                    document.getElementById('resultsSection').classList.remove('hidden');
+                    document.getElementById('resultsSection').scrollIntoView({ 
+                        behavior: 'smooth' 
+                    });
+                    statusEl.textContent = '분석 완료!';
+                    statusEl.className = 'success';
+                } else {
+                    throw new Error(data.message || '분석 실패');
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                statusEl.textContent = `분석 오류: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+
+        // 분석 결과 표시
+        function displayAnalysisResults(analysis) {
+            // 점수 카드 표시
+            const scoresGrid = document.getElementById('scoresGrid');
+            scoresGrid.innerHTML = `
+                <div class="score-card">
+                    <h4>발음 정확도</h4>
+                    <div class="score-value">${analysis.pronunciation_score}</div>
+                    <div>점</div>
+                </div>
+                <div class="score-card">
+                    <h4>인식 정확도</h4>
+                    <div class="score-value">${analysis.accuracy_score}</div>
+                    <div>점</div>
+                </div>
+                <div class="score-card">
+                    <h4>유창성</h4>
+                    <div class="score-value">${analysis.fluency_score}</div>
+                    <div>점</div>
+                </div>
+                <div class="score-card">
+                    <h4>완성도</h4>
+                    <div class="score-value">${analysis.completeness_score}</div>
+                    <div>점</div>
+                </div>
+            `;
+
+            // 전체 평가
+            document.getElementById('overallAssessment').textContent = 
+                analysis.feedback.overall_assessment;
+
+            // 잘한 점들
+            const strengthsList = document.getElementById('strengths');
+            strengthsList.innerHTML = '';
+            analysis.feedback.strengths.forEach(strength => {
+                const li = document.createElement('li');
+                li.textContent = strength;
+                strengthsList.appendChild(li);
+            });
+
+            // 개선할 점들
+            const improvementsList = document.getElementById('improvements');
+            improvementsList.innerHTML = '';
+            analysis.feedback.areas_for_improvement.forEach(improvement => {
+                const li = document.createElement('li');
+                li.textContent = improvement;
+                improvementsList.appendChild(li);
+            });
+
+            // 구체적 조언
+            const tipsList = document.getElementById('tips');
+            tipsList.innerHTML = '';
+            analysis.feedback.specific_tips.forEach(tip => {
+                const li = document.createElement('li');
+                li.textContent = tip;
+                tipsList.appendChild(li);
+            });
+
+            // 단어별 분석
+            const wordAnalysis = document.getElementById('wordAnalysis');
+            wordAnalysis.innerHTML = '';
+            analysis.word_scores.forEach(wordScore => {
+                const wordDiv = document.createElement('div');
+                wordDiv.className = `word-score ${wordScore.is_correct ? 'correct' : 'incorrect'}`;
+                wordDiv.innerHTML = `
+                    <div class="word-text">${wordScore.word}</div>
+                    <div class="word-score-value" style="color: ${wordScore.is_correct ? '#00b894' : '#e74c3c'}">
+                        ${wordScore.score}점
+                    </div>
+                `;
+                wordAnalysis.appendChild(wordDiv);
+            });
+
+            // 분석 결과 표시
+            document.getElementById('analysisResults').style.display = 'block';
+        }
+
+        // 예시 듣기 (TTS)
+        function playExample() {
+            if (currentText && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(currentText);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // 녹음 리셋
+        function resetRecording() {
+            recordedBlob = null;
+            audioChunks = [];
+            document.getElementById('audioControls').style.display = 'none';
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('recordingStatus').textContent = '';
+        }
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', () => {
+            console.log('🎤 Voice Test Page Loaded');
+            
+            // 마이크 지원 여부 확인
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('recordingStatus').textContent = 
+                    '⚠️ 이 브라우저는 음성 녹음을 지원하지 않습니다.';
+                document.getElementById('recordingStatus').className = 'error';
+            }
+        });
+    </script>
+</body>
+</html>
