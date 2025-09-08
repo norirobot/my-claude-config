@@ -1,7 +1,7 @@
 # 📋 프로젝트 현황 관리
 
 > **마지막 업데이트**: 2025-09-08  
-> **진행 중**: 2개 | **완료**: 0개
+> **진행 중**: 3개 | **완료**: 0개
 
 ---
 
@@ -73,11 +73,52 @@
   - AI Engine: Ollama (무료 로컬) + OpenAI (유료 폴백)
   - Styling: Material-UI 테마 시스템 (신뢰감 있는 블루 계열)
   - Database: SQLite (개발) + PostgreSQL (프로덕션 예정)
-- **파일 위치**: `C:\Users\sintt\ai-english-tutor\` (프론트), `C:\Users\sintt\same-tutor-platform\` (백엔드)
-- **접속 URL**: http://localhost:3002 (웹앱), http://localhost:3001/api (API)
+- **파일 위치**: `C:\Users\sintt\my-claude-config\ai-english-tutor\` 
+  - Frontend: http://localhost:3001 (React + TypeScript + Material-UI)
+  - Backend: http://localhost:3003 (Express API)
 - **예상 기간**: 12-16주 (2025-09-04 ~ 2025-12-20)
 
-### 2. 🎓 Attok 출결 모니터링 시스템 (2025-09-08 테스트)
+### 📌 2025-09-09 작업 예정 사항
+- **새로운 아이디어 구현 시작**
+  - [ ] 대시보드 기능 강화
+  - [ ] 언어 변환 시스템 개선  
+  - [ ] AI 튜터 대화 기능 연동
+- **주의사항**: 
+  - english-learning-tutor-app 폴더는 구버전 (삭제됨)
+  - 최신 작업은 ai-english-tutor 폴더에서만 진행
+
+### 2. 🎬 Volty Creator Studio (2025-09-08 작업)
+진행률: █████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ 45%
+- **목표**: YouTube 채널 Volty의 운동기구 제작 영상 워크플로우 관리 도구
+- **핵심 기능**:
+  - 프로젝트별 10단계 워크플로우 관리
+  - AI 대본 생성 (Claude API 연동)
+  - 파일 관리 시스템
+  - 각 단계별 상세 작업 기록
+- **진행 현황**:
+  - [x] 프로젝트 그리드 UI 구현
+  - [x] 프로젝트 상세 페이지 구현
+  - [x] 워크플로우 10단계 폴더 구조
+  - [x] 체크박스 상태 관리 시스템
+  - [x] AI 스크립트 패널 UI
+  - [x] 파일 매니저 기본 구현
+  - [x] **버그 수정**: 워크플로우 단계 클릭 시 상세 페이지 전환 문제 해결
+  - [ ] WorkflowStepDetail 컴포넌트 기능 구현
+  - [ ] Claude API 실제 연동
+  - [ ] Electron 빌드 및 배포
+- **기술 스택**:
+  - Frontend: React + TypeScript + Tailwind CSS
+  - Desktop: Electron
+  - Build: Vite
+  - AI: Claude API (예정)
+- **파일 위치**: `C:\Users\sintt\volty-creator-studio\`
+- **접속 URL**: http://localhost:5173 (개발 서버)
+- **다음 작업**:
+  - WorkflowStepDetail 컴포넌트 완성
+  - 각 단계별 데이터 저장 기능
+  - Claude API 키 설정 및 연동
+
+### 3. 🎓 Attok 출결 모니터링 시스템 (2025-09-08 테스트)
 진행률: ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 25%
 - **목표**: attok.co.kr 학원 출결 시스템 자동 모니터링
 - **핵심 기능**: 
