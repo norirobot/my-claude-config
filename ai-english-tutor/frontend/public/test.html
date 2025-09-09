@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 페이지</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1976d2; }
+        .status { color: #2e7d32; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 AI 영어 튜터 - 테스트 페이지</h1>
+        <p class="status">✅ 웹서버가 정상적으로 작동하고 있습니다!</p>
+        
+        <h2>📊 현재 상태:</h2>
+        <ul>
+            <li><strong>프론트엔드 서버:</strong> http://localhost:3000 (Vite)</li>
+            <li><strong>현재 시간:</strong> <span id="time"></span></li>
+            <li><strong>브라우저:</strong> <span id="browser"></span></li>
+        </ul>
+        
+        <h2>🔗 주요 링크:</h2>
+        <ul>
+            <li><a href="/">홈페이지 (React 앱)</a></li>
+            <li><a href="/login">로그인 페이지</a></li>
+            <li><a href="/dashboard">대시보드 (로그인 필요)</a></li>
+        </ul>
+        
+        <h2>🛠️ 디버그 정보:</h2>
+        <div id="debug-info"></div>
+    </div>
+
+    <script>
+        // 현재 시간 표시
+        document.getElementById('time').textContent = new Date().toLocaleString('ko-KR');
+        
+        // 브라우저 정보
+        document.getElementById('browser').textContent = navigator.userAgent;
+        
+        // React 앱 접속 테스트
+        async function testReactApp() {
+            try {
+                const response = await fetch('/');
+                const html = await response.text();
+                const hasReact = html.includes('react') || html.includes('src="/src/main.tsx"');
+                
+                document.getElementById('debug-info').innerHTML = `
+                    <p><strong>React 앱 상태:</strong> ${hasReact ? '✅ 정상' : '❌ 오류'}</p>
+                    <p><strong>HTML 응답 길이:</strong> ${html.length} bytes</p>
+                    <p><strong>응답 상태:</strong> ${response.status}</p>
+                `;
+            } catch (error) {
+                document.getElementById('debug-info').innerHTML = `
+                    <p><strong>React 앱 상태:</strong> ❌ 오류 - ${error.message}</p>
+                `;
+            }
+        }
+        
+        testReactApp();
+    </script>
+</body>
+</html>

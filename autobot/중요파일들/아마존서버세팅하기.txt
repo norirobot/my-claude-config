@@ -1,0 +1,20 @@
+
+
+아마존  aws
+
+
+https://console.aws.amazon.com/console/home?region=us-east-1
+
+
+sinttogi@naver.com
+Rkdeotn007&
+
+
+인스턴스 도스창에 입력할 내용들
+(입력하는 이유 :  ftp에서 정상적으로 인식이 되지 않아 입력하는 과정 (내용은 굳이 몰라도됨)
+
+python3 --version
+sudo mkdir /var/autobot
+sudo chown -R ec2-user /var/autobot
+sudo chmod 2775 /var/autobot
+find /var/autobot -type d -exec sudo chmod 2775 {} \;

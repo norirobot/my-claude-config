@@ -1,0 +1,31 @@
+
+<업비트>
+
+<학원>
+access key
+9q8XGQAfxoPOGD3i0H2ZBlZ5I1iDGLD2g6IOjBD8
+
+secret key
+TR5CVi1W5mxPagdAcoDl1kw0WOzNI1XUxTge75Qx
+
+<집>
+access key
+9w9Mb82ky8FOANydKewvfo3jIMb1e0v69mQc8rru
+
+
+secret key
+9rOTtCIHD6dAh6csoFF1uiZ0bjzxOrQLrJOC0mib
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+<바이낸스>
+
+access key
+yNX7OXrZeQO8YzctMrEfmmIBmW1WSQQJt6bVmnr2PjZVbM5zL1WhO9mlA0DXPWD9
+
+
+secret key
+Wkf40IJUbj7ik5SceTGHWSlCMvXz1thXuhORmjy9to9PSLkfNDff2MKasDy2G8HJ

@@ -1,0 +1,16 @@
+{
+  "desktop_notifications": true,
+  "sound_alerts": true,
+  "telegram_enabled": false,
+  "email_enabled": false,
+  "telegram_bot_token": "",
+  "telegram_chat_id": "",
+  "email_smtp_server": "smtp.gmail.com",
+  "email_smtp_port": 587,
+  "email_user": "",
+  "email_password": "",
+  "email_recipients": [],
+  "sound_buy": "sounds/buy_signal.wav",
+  "sound_sell": "sounds/sell_signal.wav",
+  "sound_error": "sounds/error.wav"
+}

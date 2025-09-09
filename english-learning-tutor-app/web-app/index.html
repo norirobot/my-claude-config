@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Learning Hub - AI 영어 학습 플랫폼</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <h1 class="logo clickable-logo">🎓 English Learning Hub</h1>
+                <nav class="nav">
+                    <!-- 네비게이션 메뉴 제거 -->
+                </nav>
+                <div class="user-info">
+                    <button id="loginBtn" class="btn-secondary">로그인</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Home Page -->
+            <div id="homePage" class="page active">
+                <div class="hero">
+                    <h2>AI와 실제 튜터가 함께하는<br>영어 학습 플랫폼</h2>
+                    <p>실전 상황별 대화 연습부터 1:1 튜터 매칭까지</p>
+                    <p class="hero-subtitle">아래 기능 카드를 클릭하여 시작하세요</p>
+                </div>
+
+                <div class="features">
+                    <div class="feature-card clickable" data-page="practice">
+                        <div class="feature-icon">💬</div>
+                        <h3>AI 대화 연습</h3>
+                        <p>실전 상황별 대화 연습 (카페, 택시, 공항 등)</p>
+                        <div class="card-action">👆 클릭하여 시작</div>
+                    </div>
+                    <div class="feature-card clickable" data-page="pronunciation">
+                        <div class="feature-icon">🎯</div>
+                        <h3>AI 발음 분석</h3>
+                        <p>음성 녹음으로 정확한 발음 교정 받기</p>
+                        <div class="card-action">👆 클릭하여 시작</div>
+                    </div>
+                    <div class="feature-card clickable" data-page="tutor">
+                        <div class="feature-icon">👥</div>
+                        <h3>전문 튜터 매칭</h3>
+                        <p>원어민/한국인 튜터와 1:1 맞춤형 수업</p>
+                        <div class="card-action">👆 클릭하여 시작</div>
+                    </div>
+                    <div class="feature-card clickable" data-page="progress">
+                        <div class="feature-icon">📊</div>
+                        <h3>학습 진도 관리</h3>
+                        <p>체계적인 학습 기록과 성취도 추적</p>
+                        <div class="card-action">👆 클릭하여 시작</div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number">10,000+</div>
+                        <div class="stat-label">활성 사용자</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">50+</div>
+                        <div class="stat-label">실전 상황</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100+</div>
+                        <div class="stat-label">전문 튜터</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">95%</div>
+                        <div class="stat-label">만족도</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practice Page -->
+            <div id="practicePage" class="page">
+                <div class="container">
+                    <h2>AI 대화 연습</h2>
+                    
+                    <div class="situation-selector">
+                        <h3>상황 선택</h3>
+                        <div class="situation-grid">
+                            <div class="situation-card" data-situation="cafe">
+                                <div class="situation-icon">☕</div>
+                                <div class="situation-name">카페 주문</div>
+                                <div class="situation-level">초급</div>
+                            </div>
+                            <div class="situation-card" data-situation="taxi">
+                                <div class="situation-icon">🚕</div>
+                                <div class="situation-name">택시 이용</div>
+                                <div class="situation-level">초급</div>
+                            </div>
+                            <div class="situation-card" data-situation="restaurant">
+                                <div class="situation-icon">🍽️</div>
+                                <div class="situation-name">레스토랑</div>
+                                <div class="situation-level">중급</div>
+                            </div>
+                            <div class="situation-card" data-situation="airport">
+                                <div class="situation-icon">✈️</div>
+                                <div class="situation-name">공항</div>
+                                <div class="situation-level">중급</div>
+                            </div>
+                            <div class="situation-card" data-situation="hospital">
+                                <div class="situation-icon">🏥</div>
+                                <div class="situation-name">병원</div>
+                                <div class="situation-level">고급</div>
+                            </div>
+                            <div class="situation-card" data-situation="business">
+                                <div class="situation-icon">💼</div>
+                                <div class="situation-name">비즈니스 미팅</div>
+                                <div class="situation-level">고급</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="chatInterface" class="chat-interface" style="display: none;">
+                        <div class="chat-header">
+                            <h3 id="situationTitle">카페 주문하기</h3>
+                            <button class="btn-small" onclick="endSession()">종료</button>
+                        </div>
+                        <div id="chatMessages" class="chat-messages">
+                            <!-- Messages will be added here -->
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="input-options">
+                                <button id="voiceBtn" class="voice-btn">🎤 음성 입력</button>
+                                <button id="textModeBtn" class="text-mode-btn active">⌨️ 텍스트</button>
+                            </div>
+                            <div class="input-wrapper">
+                                <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." />
+                                <button id="sendBtn" class="send-btn">전송</button>
+                            </div>
+                        </div>
+                        <div id="feedbackArea" class="feedback-area" style="display: none;">
+                            <h4>AI 피드백</h4>
+                            <div id="feedbackContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pronunciation Analysis Page -->
+            <div id="pronunciationPage" class="page">
+                <div class="container">
+                    <h2>AI 발음 분석</h2>
+                    
+                    <div class="pronunciation-intro">
+                        <p>AI가 실시간으로 당신의 발음을 분석하고 개선점을 제안합니다.</p>
+                    </div>
+
+                    <div class="pronunciation-categories">
+                        <h3>연습 카테고리</h3>
+                        <div class="category-grid">
+                            <div class="category-card" data-category="basic">
+                                <div class="category-icon">🔤</div>
+                                <div class="category-name">기본 발음</div>
+                                <div class="category-desc">알파벳, 기본 단어</div>
+                            </div>
+                            <div class="category-card" data-category="vowels">
+                                <div class="category-icon">🗣️</div>
+                                <div class="category-name">모음 발음</div>
+                                <div class="category-desc">A, E, I, O, U 정확한 발음</div>
+                            </div>
+                            <div class="category-card" data-category="consonants">
+                                <div class="category-icon">👄</div>
+                                <div class="category-name">자음 발음</div>
+                                <div class="category-desc">R, L, TH 등 어려운 자음</div>
+                            </div>
+                            <div class="category-card" data-category="sentences">
+                                <div class="category-icon">📝</div>
+                                <div class="category-name">문장 발음</div>
+                                <div class="category-desc">일상 문장 전체 발음</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pronunciationPractice" class="pronunciation-practice" style="display: none;">
+                        <div class="practice-header">
+                            <h3 id="practiceTitle">기본 발음 연습</h3>
+                            <button class="btn-small" onclick="endPronunciationPractice()">종료</button>
+                        </div>
+                        
+                        <div class="current-word">
+                            <h4>연습할 단어/문장:</h4>
+                            <div id="currentWord" class="word-display">Hello</div>
+                            <div id="currentPhonetic" class="phonetic-display">/həˈloʊ/</div>
+                        </div>
+                        
+                        <div class="recording-area">
+                            <button id="recordBtn" class="record-btn">🎤 녹음 시작</button>
+                            <div id="recordingStatus" class="recording-status">준비</div>
+                        </div>
+                        
+                        <div id="pronunciationResult" class="pronunciation-result" style="display: none;">
+                            <h4>분석 결과</h4>
+                            <div id="pronunciationScore" class="score-display">점수: -/100</div>
+                            <div id="pronunciationFeedback" class="feedback-display"></div>
+                            <div class="practice-actions">
+                                <button class="btn-secondary" onclick="retryPronunciation()">다시 시도</button>
+                                <button class="btn-primary" onclick="nextWord()">다음 단어</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutor Page -->
+            <div id="tutorPage" class="page">
+                <div class="container">
+                    <h2>튜터 매칭</h2>
+                    
+                    <div class="tutor-filters">
+                        <select class="filter-select">
+                            <option>튜터 타입</option>
+                            <option>원어민 튜터</option>
+                            <option>한국인 튜터</option>
+                        </select>
+                        <select class="filter-select">
+                            <option>전문 분야</option>
+                            <option>일상 회화</option>
+                            <option>비즈니스</option>
+                            <option>시험 준비</option>
+                        </select>
+                        <select class="filter-select">
+                            <option>가격대</option>
+                            <option>~30,000원</option>
+                            <option>30,000~50,000원</option>
+                            <option>50,000원~</option>
+                        </select>
+                        <button class="btn-primary">검색</button>
+                    </div>
+
+                    <div class="tutor-grid">
+                        <div class="tutor-card">
+                            <div class="tutor-image">👨‍🏫</div>
+                            <div class="tutor-info">
+                                <h3>John Smith</h3>
+                                <div class="tutor-badge">원어민</div>
+                                <div class="tutor-rating">⭐ 4.9 (120 리뷰)</div>
+                                <p>10년 경력의 비즈니스 영어 전문가</p>
+                                <div class="tutor-price">40,000원/시간</div>
+                                <button class="btn-primary btn-small">프로필 보기</button>
+                            </div>
+                        </div>
+                        <div class="tutor-card">
+                            <div class="tutor-image">👩‍🏫</div>
+                            <div class="tutor-info">
+                                <h3>김지은</h3>
+                                <div class="tutor-badge">한국인</div>
+                                <div class="tutor-rating">⭐ 4.8 (85 리뷰)</div>
+                                <p>토익/토플 전문, 체계적인 문법 지도</p>
+                                <div class="tutor-price">35,000원/시간</div>
+                                <button class="btn-primary btn-small">프로필 보기</button>
+                            </div>
+                        </div>
+                        <div class="tutor-card">
+                            <div class="tutor-image">👨‍🏫</div>
+                            <div class="tutor-info">
+                                <h3>Mike Johnson</h3>
+                                <div class="tutor-badge">원어민</div>
+                                <div class="tutor-rating">⭐ 5.0 (200 리뷰)</div>
+                                <p>일상 회화 전문, 재미있는 수업</p>
+                                <div class="tutor-price">45,000원/시간</div>
+                                <button class="btn-primary btn-small">프로필 보기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Page -->
+            <div id="progressPage" class="page">
+                <div class="container">
+                    <h2>학습 진도</h2>
+                    
+                    <div class="progress-overview">
+                        <div class="progress-card">
+                            <h3>이번 주 학습 시간</h3>
+                            <div class="progress-value">12시간 30분</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 75%;"></div>
+                            </div>
+                            <div class="progress-label">목표: 15시간</div>
+                        </div>
+                        <div class="progress-card">
+                            <h3>완료한 대화</h3>
+                            <div class="progress-value">24개</div>
+                            <div class="progress-change">+8 이번 주</div>
+                        </div>
+                        <div class="progress-card">
+                            <h3>평균 점수</h3>
+                            <div class="progress-value">85점</div>
+                            <div class="progress-change">+5 향상</div>
+                        </div>
+                    </div>
+
+                    <div class="recent-sessions">
+                        <h3>최근 학습 내역</h3>
+                        <div class="session-list">
+                            <div class="session-item">
+                                <div class="session-icon">☕</div>
+                                <div class="session-info">
+                                    <div class="session-title">카페 주문하기</div>
+                                    <div class="session-date">2025-09-02 09:30</div>
+                                </div>
+                                <div class="session-score">92점</div>
+                            </div>
+                            <div class="session-item">
+                                <div class="session-icon">🚕</div>
+                                <div class="session-info">
+                                    <div class="session-title">택시 이용하기</div>
+                                    <div class="session-date">2025-09-01 14:20</div>
+                                </div>
+                                <div class="session-score">88점</div>
+                            </div>
+                            <div class="session-item">
+                                <div class="session-icon">🍽️</div>
+                                <div class="session-info">
+                                    <div class="session-title">레스토랑 예약</div>
+                                    <div class="session-date">2025-08-31 10:15</div>
+                                </div>
+                                <div class="session-score">79점</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div id="profilePage" class="page">
+                <div class="container">
+                    <h2>프로필</h2>
+                    
+                    <div class="profile-card">
+                        <div class="profile-avatar">👤</div>
+                        <div class="profile-info">
+                            <h3>테스트 사용자</h3>
+                            <p>test@example.com</p>
+                            <div class="profile-level">
+                                <span class="level-badge">중급</span>
+                                <span class="level-points">1,250 포인트</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-sections">
+                        <div class="profile-section">
+                            <h3>학습 목표</h3>
+                            <div class="goal-item">
+                                <input type="checkbox" checked> 일상 회화 마스터
+                            </div>
+                            <div class="goal-item">
+                                <input type="checkbox"> 토익 800점 달성
+                            </div>
+                            <div class="goal-item">
+                                <input type="checkbox"> 비즈니스 영어 습득
+                            </div>
+                        </div>
+                        
+                        <div class="profile-section">
+                            <h3>설정</h3>
+                            <div class="setting-item">
+                                <label>학습 알림</label>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>음성 자동 재생</label>
+                                <input type="checkbox">
+                            </div>
+                            <div class="setting-item">
+                                <label>난이도</label>
+                                <select>
+                                    <option>초급</option>
+                                    <option selected>중급</option>
+                                    <option>고급</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>로그인</h2>
+                <form id="loginForm">
+                    <input type="email" id="email" placeholder="이메일" required>
+                    <input type="password" id="password" placeholder="비밀번호" required>
+                    <button type="submit" class="btn-primary">로그인</button>
+                    <button type="button" class="btn-secondary" onclick="showSignup()">회원가입</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

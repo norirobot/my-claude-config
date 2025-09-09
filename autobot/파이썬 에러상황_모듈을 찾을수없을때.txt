@@ -1,0 +1,5 @@
+모듈을 찾을수 없다고 나올때 
+
+인터프리터 설정 변경
+
+https://gentlesark.tistory.com/32

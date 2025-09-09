@@ -1,0 +1,3 @@
+cd C:\Users\sintt\OneDrive\바탕 화면\autobot
+
+ssh -i "autobotkey.pem" ec2-user@ec2-184-73-249-154.compute-1.amazonaws.com

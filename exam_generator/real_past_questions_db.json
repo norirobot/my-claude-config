@@ -1,0 +1,403 @@
+{
+  "metadata": {
+    "exam_name": "정보처리기사",
+    "total_questions": 100,
+    "categories": ["소프트웨어설계", "소프트웨어개발", "데이터베이스구축", "프로그래밍언어활용", "정보시스템구축관리"],
+    "difficulty_levels": ["하", "중", "상"],
+    "last_updated": "2025-08-22",
+    "description": "실제 정보처리기사 기출문제 기반"
+  },
+  "questions": [
+    {
+      "id": "2024_1_001",
+      "category": "소프트웨어설계",
+      "subcategory": "요구사항확인",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "1회",
+      "question": "소프트웨어 생명주기 모델 중 나선형(Spiral) 모델의 특징으로 옳은 것은?",
+      "options": [
+        "각 단계가 순차적으로 진행되어 이전 단계로의 회귀가 불가능하다",
+        "위험 분석과 프로토타입 개발을 통해 점진적으로 완전한 시스템을 개발한다",
+        "개발 기간이 짧고 즉시 사용 가능한 시스템을 개발한다",
+        "사용자의 요구사항이 명확하고 변경이 없는 경우에 적합하다"
+      ],
+      "correct_answer": 1,
+      "explanation": "나선형 모델은 위험 분석(Risk Analysis)을 기반으로 하여 각 단계에서 프로토타입을 개발하고 위험을 식별하여 관리하는 모델입니다."
+    },
+    {
+      "id": "2024_1_002",
+      "category": "소프트웨어설계",
+      "subcategory": "화면설계",
+      "difficulty": "하",
+      "year": "2024",
+      "round": "1회",
+      "question": "UML의 관계(Relationship) 중 일반화(Generalization) 관계를 나타내는 기호는?",
+      "options": [
+        "실선 화살표(→)",
+        "점선 화살표(- - →)",
+        "속이 빈 삼각형 화살표(△→)",
+        "마름모꼴 화살표(◇→)"
+      ],
+      "correct_answer": 2,
+      "explanation": "UML에서 일반화 관계는 상속 관계를 나타내며, 속이 빈 삼각형 화살표로 표현됩니다."
+    },
+    {
+      "id": "2024_1_003",
+      "category": "소프트웨어개발",
+      "subcategory": "통합구현",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "1회",
+      "question": "블랙박스 테스트 기법에 해당하는 것은?",
+      "options": [
+        "구문(Statement) 커버리지",
+        "결정(Decision) 커버리지",
+        "동등 분할(Equivalence Partitioning)",
+        "조건(Condition) 커버리지"
+      ],
+      "correct_answer": 2,
+      "explanation": "동등 분할은 입력 데이터의 영역을 유한개의 서브도메인으로 나누어 각 영역에서 하나의 테스트 케이스만을 선정하는 블랙박스 테스트 기법입니다."
+    },
+    {
+      "id": "2024_1_004",
+      "category": "데이터베이스구축",
+      "subcategory": "SQL응용",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "1회",
+      "question": "다음 SQL문의 실행 결과로 옳은 것은?\n\nSELECT COUNT(*) FROM 학생 WHERE 나이 IS NOT NULL;",
+      "options": [
+        "학생 테이블의 전체 레코드 수",
+        "나이가 입력된 학생의 수",
+        "나이가 입력되지 않은 학생의 수",
+        "구문 오류로 실행되지 않음"
+      ],
+      "correct_answer": 1,
+      "explanation": "IS NOT NULL 조건은 나이 컬럼에 값이 있는(NULL이 아닌) 레코드를 선택하므로, 나이가 입력된 학생의 수를 반환합니다."
+    },
+    {
+      "id": "2024_1_005",
+      "category": "데이터베이스구축",
+      "subcategory": "논리데이터베이스설계",
+      "difficulty": "상",
+      "year": "2024",
+      "round": "1회",
+      "question": "정규화 과정에서 제1정규형을 만족하는 조건은?",
+      "options": [
+        "기본키가 존재해야 한다",
+        "모든 속성이 원자값을 가져야 한다",
+        "완전 함수 종속을 만족해야 한다",
+        "이행적 함수 종속이 제거되어야 한다"
+      ],
+      "correct_answer": 1,
+      "explanation": "제1정규형(1NF)은 릴레이션의 모든 속성이 원자값(Atomic Value)을 가져야 한다는 조건입니다. 즉, 다중값이나 복합값을 허용하지 않습니다."
+    },
+    {
+      "id": "2024_1_006",
+      "category": "프로그래밍언어활용",
+      "subcategory": "서버프로그램구현",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "1회",
+      "question": "다음 Java 코드의 출력 결과는?\n\n```java\nint[] arr = {1, 2, 3, 4, 5};\nfor(int i = 0; i < arr.length; i++) {\n    if(arr[i] % 2 == 0) continue;\n    System.out.print(arr[i] + \" \");\n}\n```",
+      "options": [
+        "1 2 3 4 5",
+        "2 4",
+        "1 3 5",
+        "1 3 5 2 4"
+      ],
+      "correct_answer": 2,
+      "explanation": "조건문 arr[i] % 2 == 0이 참일 때(짝수일 때) continue로 건너뛰므로, 홀수인 1, 3, 5만 출력됩니다."
+    },
+    {
+      "id": "2024_1_007",
+      "category": "프로그래밍언어활용",
+      "subcategory": "프로그래밍언어활용",
+      "difficulty": "하",
+      "year": "2024",
+      "round": "1회",
+      "question": "Python에서 리스트(List)의 마지막 요소를 제거하는 메서드는?",
+      "options": [
+        "remove()",
+        "delete()",
+        "pop()",
+        "clear()"
+      ],
+      "correct_answer": 2,
+      "explanation": "Python의 pop() 메서드는 리스트의 마지막 요소를 제거하고 그 값을 반환합니다. 인덱스를 지정하면 해당 위치의 요소를 제거할 수도 있습니다."
+    },
+    {
+      "id": "2024_1_008",
+      "category": "정보시스템구축관리",
+      "subcategory": "소프트웨어개발보안구축",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "1회",
+      "question": "SQL Injection 공격을 방어하는 방법으로 옳지 않은 것은?",
+      "options": [
+        "Prepared Statement 사용",
+        "입력값 검증 및 필터링",
+        "데이터베이스 사용자 권한 최소화",
+        "웹서버의 포트 번호 변경"
+      ],
+      "correct_answer": 3,
+      "explanation": "웹서버의 포트 번호 변경은 SQL Injection 공격 방어와는 직접적인 관련이 없습니다. SQL Injection은 데이터베이스 쿼리 조작을 통한 공격이므로 입력값 검증, Prepared Statement 사용 등이 효과적입니다."
+    },
+    {
+      "id": "2024_2_001",
+      "category": "소프트웨어설계",
+      "subcategory": "요구사항확인",
+      "difficulty": "하",
+      "year": "2024",
+      "round": "2회",
+      "question": "애자일(Agile) 방법론의 핵심 가치 중 '프로세스와 도구보다 개인과 상호작용'에 해당하지 않는 것은?",
+      "options": [
+        "팀원 간의 소통 중시",
+        "고객과의 협업 강화",
+        "문서화 작업 우선시",
+        "변화에 대한 유연한 대응"
+      ],
+      "correct_answer": 2,
+      "explanation": "애자일 선언문에서는 '포괄적인 문서보다 작동하는 소프트웨어'를 중시하므로, 문서화 작업을 우선시하는 것은 애자일 가치에 부합하지 않습니다."
+    },
+    {
+      "id": "2024_2_002",
+      "category": "소프트웨어개발",
+      "subcategory": "통합구현",
+      "difficulty": "상",
+      "year": "2024",
+      "round": "2회",
+      "question": "소프트웨어 품질 특성 중 ISO/IEC 25010에서 정의한 8가지 품질 특성에 포함되지 않는 것은?",
+      "options": [
+        "기능 적합성(Functional Suitability)",
+        "성능 효율성(Performance Efficiency)",
+        "호환성(Compatibility)",
+        "경제성(Economy)"
+      ],
+      "correct_answer": 3,
+      "explanation": "ISO/IEC 25010의 8가지 품질 특성은 기능 적합성, 성능 효율성, 호환성, 사용성, 신뢰성, 보안성, 유지보수성, 이식성입니다. 경제성은 포함되지 않습니다."
+    },
+    {
+      "id": "2024_2_003",
+      "category": "데이터베이스구축",
+      "subcategory": "물리데이터베이스설계",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "2회",
+      "question": "인덱스(Index) 생성의 장점으로 옳지 않은 것은?",
+      "options": [
+        "검색 속도가 향상된다",
+        "정렬 작업 시간이 단축된다",
+        "데이터 삽입 속도가 향상된다",
+        "조인 연산 속도가 향상된다"
+      ],
+      "correct_answer": 2,
+      "explanation": "인덱스는 검색, 정렬, 조인 속도를 향상시키지만, 데이터 삽입 시에는 인덱스도 함께 갱신해야 하므로 오히려 삽입 속도가 저하됩니다."
+    },
+    {
+      "id": "2024_2_004",
+      "category": "프로그래밍언어활용",
+      "subcategory": "프로그래밍언어활용",
+      "difficulty": "상",
+      "year": "2024",
+      "round": "2회",
+      "question": "다음 C 코드의 실행 결과는?\n\n```c\n#include <stdio.h>\nint main() {\n    int a = 5, b = 10;\n    printf(\"%d\", ++a * b--);\n    return 0;\n}\n```",
+      "options": [
+        "50",
+        "60",
+        "55",
+        "65"
+      ],
+      "correct_answer": 1,
+      "explanation": "++a는 전위 증가로 a를 6으로 만든 후 사용하고, b--는 후위 감소로 10을 사용한 후 9로 만듭니다. 따라서 6 * 10 = 60이 출력됩니다."
+    },
+    {
+      "id": "2024_2_005",
+      "category": "정보시스템구축관리",
+      "subcategory": "IT프로젝트정보시스템구축관리",
+      "difficulty": "중",
+      "year": "2024",
+      "round": "2회",
+      "question": "COCOMO 모델에서 프로젝트의 복잡도에 따른 분류가 아닌 것은?",
+      "options": [
+        "Organic",
+        "Semi-detached",
+        "Embedded",
+        "Complex"
+      ],
+      "correct_answer": 3,
+      "explanation": "COCOMO 모델에서는 프로젝트를 Organic(단순형), Semi-detached(중간형), Embedded(내장형)로 분류합니다. Complex는 COCOMO 분류에 포함되지 않습니다."
+    },
+    {
+      "id": "2023_3_001",
+      "category": "소프트웨어설계",
+      "subcategory": "화면설계",
+      "difficulty": "하",
+      "year": "2023",
+      "round": "3회",
+      "question": "UI 설계 원칙 중 '사용자가 시스템으로부터 어떤 반응이 올 것인지 알 수 있도록 하는 것'에 해당하는 원칙은?",
+      "options": [
+        "직관성(Intuitive)",
+        "일관성(Consistency)",
+        "유효성(Efficiency)",
+        "예측가능성(Predictability)"
+      ],
+      "correct_answer": 3,
+      "explanation": "예측가능성은 사용자가 시스템의 반응을 미리 예상할 수 있도록 하는 UI 설계 원칙입니다."
+    },
+    {
+      "id": "2023_3_002",
+      "category": "소프트웨어개발",
+      "subcategory": "통합구현",
+      "difficulty": "중",
+      "year": "2023",
+      "round": "3회",
+      "question": "화이트박스 테스트 기법 중 모든 조건식의 참/거짓을 한 번씩 수행하는 기법은?",
+      "options": [
+        "구문 커버리지(Statement Coverage)",
+        "결정 커버리지(Decision Coverage)",
+        "조건 커버리지(Condition Coverage)",
+        "다중 조건 커버리지(Multiple Condition Coverage)"
+      ],
+      "correct_answer": 2,
+      "explanation": "조건 커버리지는 조건식을 구성하는 개별 조건들이 참과 거짓을 모두 한 번씩은 갖도록 하는 테스트 커버리지 기법입니다."
+    },
+    {
+      "id": "2023_3_003",
+      "category": "데이터베이스구축",
+      "subcategory": "SQL응용",
+      "difficulty": "중",
+      "year": "2023",
+      "round": "3회",
+      "question": "다음 중 DDL(Data Definition Language)에 해당하는 SQL 명령어는?",
+      "options": [
+        "SELECT",
+        "INSERT",
+        "CREATE",
+        "COMMIT"
+      ],
+      "correct_answer": 2,
+      "explanation": "CREATE는 테이블, 인덱스, 뷰 등의 데이터베이스 객체를 생성하는 DDL 명령어입니다. SELECT는 DQL, INSERT는 DML, COMMIT은 TCL에 해당합니다."
+    },
+    {
+      "id": "2023_3_004",
+      "category": "프로그래밍언어활용",
+      "subcategory": "서버프로그램구현",
+      "difficulty": "하",
+      "year": "2023",
+      "round": "3회",
+      "question": "RESTful API에서 리소스를 새로 생성할 때 사용하는 HTTP 메서드는?",
+      "options": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "correct_answer": 1,
+      "explanation": "POST는 서버에 새로운 리소스를 생성하기 위해 사용하는 HTTP 메서드입니다. GET은 조회, PUT은 수정/생성, DELETE는 삭제에 사용됩니다."
+    },
+    {
+      "id": "2023_3_005",
+      "category": "정보시스템구축관리",
+      "subcategory": "소프트웨어개발보안구축",
+      "difficulty": "상",
+      "year": "2023",
+      "round": "3회",
+      "question": "시큐어 코딩(Secure Coding) 가이드에서 입력 데이터 검증 및 표현 취약점에 해당하지 않는 것은?",
+      "options": [
+        "SQL 삽입(SQL Injection)",
+        "크로스 사이트 스크립팅(XSS)",
+        "버퍼 오버플로우(Buffer Overflow)",
+        "경쟁 조건(Race Condition)"
+      ],
+      "correct_answer": 3,
+      "explanation": "경쟁 조건(Race Condition)은 시간 및 상태 취약점에 해당하며, 입력 데이터 검증 및 표현 취약점이 아닙니다."
+    },
+    {
+      "id": "2023_2_001",
+      "category": "소프트웨어설계",
+      "subcategory": "요구사항확인",
+      "difficulty": "중",
+      "year": "2023",
+      "round": "2회",
+      "question": "요구사항 명세 기법 중 자연어를 사용하여 서술하는 방식의 장점은?",
+      "options": [
+        "모호성이 없고 정확하다",
+        "이해하기 쉽고 작성이 용이하다",
+        "형식적 검증이 가능하다",
+        "자동화 도구 사용이 가능하다"
+      ],
+      "correct_answer": 1,
+      "explanation": "자연어 명세는 누구나 쉽게 이해할 수 있고 작성이 용이한 장점이 있지만, 모호성과 부정확성이 단점으로 지적됩니다."
+    },
+    {
+      "id": "2023_2_002",
+      "category": "소프트웨어개발",
+      "subcategory": "애플리케이션테스트관리",
+      "difficulty": "중",
+      "year": "2023",
+      "round": "2회",
+      "question": "성능 테스트 중 시스템에 점진적으로 사용자 수를 증가시켜 임계점을 찾는 테스트는?",
+      "options": [
+        "부하 테스트(Load Test)",
+        "스트레스 테스트(Stress Test)",
+        "볼륨 테스트(Volume Test)",
+        "스파이크 테스트(Spike Test)"
+      ],
+      "correct_answer": 1,
+      "explanation": "스트레스 테스트는 시스템의 한계점을 찾기 위해 점진적으로 부하를 증가시켜 시스템이 정상적으로 작동할 수 있는 최대치를 찾는 테스트입니다."
+    },
+    {
+      "id": "2023_2_003",
+      "category": "데이터베이스구축",
+      "subcategory": "논리데이터베이스설계",
+      "difficulty": "상",
+      "year": "2023",
+      "round": "2회",
+      "question": "관계 대수(Relational Algebra)에서 두 릴레이션의 공통 속성에 대해 같은 값을 갖는 투플들을 연결하는 연산은?",
+      "options": [
+        "셀렉션(Selection)",
+        "프로젝션(Projection)",
+        "조인(Join)",
+        "유니온(Union)"
+      ],
+      "correct_answer": 2,
+      "explanation": "조인(Join) 연산은 두 개의 릴레이션에서 공통 속성을 기준으로 같은 값을 갖는 투플들을 연결하는 관계 대수 연산입니다."
+    },
+    {
+      "id": "2023_2_004",
+      "category": "프로그래밍언어활용",
+      "subcategory": "프로그래밍언어활용",
+      "difficulty": "중",
+      "year": "2023",
+      "round": "2회",
+      "question": "다음 Python 코드의 실행 결과는?\n\n```python\ndef func(x, y=5):\n    return x + y\n\nprint(func(3))\nprint(func(3, 7))\n```",
+      "options": [
+        "8, 10",
+        "3, 7",
+        "5, 7",
+        "오류 발생"
+      ],
+      "correct_answer": 0,
+      "explanation": "첫 번째 호출 func(3)에서는 y의 기본값 5가 사용되어 3+5=8이고, 두 번째 호출 func(3,7)에서는 y=7이 전달되어 3+7=10입니다."
+    },
+    {
+      "id": "2023_2_005",
+      "category": "정보시스템구축관리",
+      "subcategory": "IT프로젝트정보시스템구축관리",
+      "difficulty": "하",
+      "year": "2023",
+      "round": "2회",
+      "question": "소프트웨어 개발 프로젝트에서 비용 산정 모델 중 하향식 산정 기법에 해당하는 것은?",
+      "options": [
+        "전문가 판단법",
+        "델파이 기법",
+        "작업분할구조(WBS)",
+        "기능점수 모델"
+      ],
+      "correct_answer": 3,
+      "explanation": "기능점수 모델은 소프트웨어의 기능을 정량화하여 비용을 산정하는 상향식 기법입니다. 전문가 판단법과 델파이 기법은 하향식 기법입니다."
+    }
+  ]
+}
