@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📌 다음 세션 시작점 - 2025-09-09
+## 📌 다음 세션 시작점 - 2025-01-10
 ### ⚡ 즉시 확인 사항
 1. **영어 학습 앱 프로젝트 위치**:
    - ✅ 최신: `my-claude-config/ai-english-tutor/`
@@ -17,11 +17,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    cd my-claude-config/ai-english-tutor/backend && PORT=3003 npm run dev
    ```
 
-3. **오늘의 작업 계획**:
-   - 대시보드 기능 강화
-   - 언어 변환 시스템 개선
-   - AI 튜터 대화 기능 연동
-   - 사용자가 추가한 새로운 아이디어 구현
+3. **비주얼 노벨 모드 접속**:
+   - URL: http://localhost:3001/visual-story
+   - 로컬 애셋 시스템 구현 완료
+
+### 🎮 2025-01-09 작업 내용
+1. **Visual Novel Story Mode 구현**
+   - 전체 화면 배경 + 캐릭터 시스템
+   - 하단 대화창 UI (35% 화면)
+   - 감정 표현 시스템 (happy, sad, surprised 등)
+   - 관계도 레벨 시스템
+
+2. **캐릭터 컴포넌트 변천사**
+   - GameCharacter → AnimeCharacter → SimpleCharacter → ProfessionalCharacter → RealisticCharacter → VisualNovelCharacter → **LocalAssetCharacter (최종)**
+   - 로컬 이미지 애셋 사용 시스템 구축
+
+3. **폴더 구조 생성**:
+   ```
+   frontend/public/assets/
+   ├── characters/
+   │   ├── jennifer/
+   │   ├── alex/
+   │   └── sophia/
+   ├── backgrounds/
+   └── ui/
+   ```
+
+### ⚠️ 발생했던 이슈들
+1. **캐릭터 디자인 문제**:
+   - SVG 직접 그리기 → 너무 유치함
+   - 실제 사람 사진 → 배경과 안 어울림
+   - 이모티콘 스타일 → 게임과 안 맞음
+   - **해결**: 로컬 애셋 시스템으로 실제 비주얼 노벨 이미지 사용
+
+2. **배경과 캐릭터 미스매치**:
+   - 실사 배경 + 만화 캐릭터 조합 부자연스러움
+   - **해결 필요**: 배경도 애니메이션 스타일로 통일 필요
+
+### 📝 내일 할 일
+1. **실제 캐릭터 애셋 다운로드**:
+   - itch.io에서 무료 비주얼 노벨 스프라이트 다운로드
+   - 각 캐릭터별 표정 이미지 (normal, happy, sad, surprised)
+   - `/public/assets/characters/` 폴더에 배치
+
+2. **배경 이미지 교체**:
+   - 현재: Unsplash 실사 이미지
+   - 변경: 애니메이션 스타일 배경 이미지
+   - 또는 AI로 생성 (Bing Image Creator)
+
+3. **백엔드 연동 테스트**:
+   - CharacterAIService.js 작동 확인
+   - OpenAI API 연결 테스트
+   - 대화 데이터 저장 기능
+
+4. **추가 기능**:
+   - 세이브/로드 시스템
+   - 사운드 효과
+   - 배경 음악
+
+### 🔗 참고 자료
+- 애셋 가이드: `/frontend/public/assets/ASSET_GUIDE.md`
+- 무료 애셋: https://itch.io (visual novel sprites free 검색)
+- 이미지 생성: https://www.bing.com/images/create
 
 ## 🏠 Home PC Setup Completed - 2025-09-02
 - SSH 키 설정 완료

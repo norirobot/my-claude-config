@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "content": "Visual novel story mode 캐릭터 시스템 구축 완료",
+    "status": "completed",
+    "activeForm": "Building character system"
+  },
+  {
+    "content": "로컬 애셋 시스템 구현 완료",
+    "status": "completed",
+    "activeForm": "Implementing local asset system"
+  },
+  {
+    "content": "내일: 실제 캐릭터 애셋 다운로드 및 적용",
+    "status": "pending",
+    "activeForm": "Downloading and applying real assets"
+  },
+  {
+    "content": "내일: 배경 이미지도 로컬 애셋으로 변경",
+    "status": "pending",
+    "activeForm": "Changing backgrounds to local assets"
+  },
+  {
+    "content": "내일: AI 대화 시스템 백엔드 연동 테스트",
+    "status": "pending",
+    "activeForm": "Testing AI dialogue backend"
+  }
+]
