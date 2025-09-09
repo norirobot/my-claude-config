@@ -28,6 +28,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Tool optimization**: Use multiple tools efficiently in single responses
 6. **최상위 AI 모델 강제 사용**: 모든 프로그램 개발 시 반드시 최상위 모델(현재 Claude Sonnet 4) 사용. 사용량 한계 도달시에도 최고 품질 유지 필수
 
+### 🔄 자동 Git 동기화 시스템
+**CRITICAL**: 작업 내용 자동 백업 및 동기화 - 집/학원 어디서든 최신 버전 유지
+
+#### 자동 동기화 트리거:
+1. **"종료"/"끝"/"exit"/"quit"** 명령 시 → 전체 프로젝트 자동 커밋 & 푸시
+2. **CLAUDE.md 수정** 시 → 즉시 자동 커밋 & 푸시
+3. **TROUBLESHOOTING.md 업데이트** 시 → 즉시 자동 커밋 & 푸시
+4. **중요 파일 변경** 시 → 자동 감지 후 커밋 & 푸시
+5. **30분마다** → 작업 중인 경우 자동 체크포인트 생성
+
+#### 자동 실행 스크립트:
+```bash
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass C:\Users\sintt\scripts\auto-git-sync.ps1
+
+# 또는 직접 실행
+git add -A && git commit -m "Auto-sync: $(date '+%Y-%m-%d %H:%M')" && git push origin master
+```
+
+### 📝 CLAUDE.md 지침 자동 추가 시스템
+**트리거 키워드**: "지침추가", "규칙추가", "add instruction", "새로운 규칙", "이것도 기억해"
+
+사용자가 위 키워드 언급 시:
+1. 자동으로 CLAUDE.md의 적절한 섹션에 추가
+2. 즉시 Git 커밋 & 푸시 (다른 PC에서도 즉시 사용 가능)
+3. 추가 완료 확인 메시지 출력
+4. 백업 파일 자동 생성 (CLAUDE.md.backup)
+
 ### 🛑 종료 명령어 시스템
 **트리거**: 사용자가 "종료", "끝", "exit", "quit" 입력 시 자동 실행
 
@@ -42,13 +70,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - CLAUDE.md 오류 패턴 섹션 업데이트
    - error_patterns.json 파일 생성
 
-3. **코드 변경사항 커밋**
+3. **코드 변경사항 자동 커밋 & 푸시**
    ```bash
    git add -A
    git status  # 변경사항 확인
    git commit -m "Session end: [날짜] - [주요 작업 내용]"
-   git push origin master
+   git push origin master  # GitHub에 자동 푸시
+   git log --oneline -5   # 최근 커밋 확인
    ```
+   **중요**: 푸시 실패 시 자동 재시도 (최대 3회)
 
 4. **개발 서버 종료**
    - 실행 중인 모든 백그라운드 프로세스 종료
@@ -62,15 +92,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - 주의사항: [특별히 기억할 점]
    ```
 
-6. **최종 요약 출력**
+6. **최종 요약 출력 & 동기화 확인**
    ```
    ✅ 오늘 세션 완료!
    - 작업 시간: [시작-종료]
    - 완료 항목: X개
    - 해결한 오류: Y개
    - 커밋 완료: [커밋 해시]
+   - GitHub 동기화: ✅ 완료
    
    💤 다음 세션에서 이어서 작업하세요!
+   🔄 다른 PC에서도 최신 버전을 사용할 수 있습니다!
    ```
 
 ### Project Status Tracking
