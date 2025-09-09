@@ -1,0 +1,32 @@
+[
+  {
+    "content": "attok.co.kr 세션 타임아웃 문제 확인",
+    "status": "completed",
+    "activeForm": "attok.co.kr 세션 타임아웃 문제 확인 중"
+  },
+  {
+    "content": "세션 유지 시스템 구현",
+    "status": "completed",
+    "activeForm": "세션 유지 시스템 구현 중"
+  },
+  {
+    "content": "실시간 모니터링 GUI 시스템 구현",
+    "status": "completed",
+    "activeForm": "실시간 모니터링 GUI 시스템 구현 중"
+  },
+  {
+    "content": "모니터링 시스템 재실행",
+    "status": "in_progress",
+    "activeForm": "모니터링 시스템 재실행 중"
+  },
+  {
+    "content": "실제 학생 데이터 추출 테스트",
+    "status": "pending",
+    "activeForm": "실제 학생 데이터 추출 테스트 중"
+  },
+  {
+    "content": "출석 감지 로직 검증",
+    "status": "pending",
+    "activeForm": "출석 감지 로직 검증 중"
+  }
+]

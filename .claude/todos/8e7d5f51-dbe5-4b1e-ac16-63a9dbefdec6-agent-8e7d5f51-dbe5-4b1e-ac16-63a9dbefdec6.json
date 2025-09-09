@@ -1,0 +1,22 @@
+[
+  {
+    "content": "HTML에서 실제 81명 학생 이름이 저장된 정확한 위치 찾기",
+    "status": "completed",
+    "activeForm": "학생 이름 저장 위치 찾기 완료"
+  },
+  {
+    "content": "학생 데이터가 저장된 특정 HTML 태그나 속성 발견",
+    "status": "completed",
+    "activeForm": "학생 데이터 저장 방식 분석 완료"
+  },
+  {
+    "content": "학생 이름 추출 조건 명확히 정의",
+    "status": "in_progress",
+    "activeForm": "학생 이름 추출 조건 정의 중"
+  },
+  {
+    "content": "출석 모니터링에서 사용할 정확한 파싱 로직 개발",
+    "status": "pending",
+    "activeForm": "정확한 파싱 로직 개발 중"
+  }
+]

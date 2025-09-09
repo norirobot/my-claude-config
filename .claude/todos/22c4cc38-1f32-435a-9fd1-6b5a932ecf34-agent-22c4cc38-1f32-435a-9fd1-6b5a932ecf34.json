@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Analyze current codebase structure and key projects",
+    "status": "in_progress",
+    "activeForm": "Analyzing current codebase structure and key projects"
+  },
+  {
+    "content": "Review existing CLAUDE.md for important rules to preserve",
+    "status": "pending",
+    "activeForm": "Reviewing existing CLAUDE.md for important rules to preserve"
+  },
+  {
+    "content": "Identify frequently used commands and patterns",
+    "status": "pending",
+    "activeForm": "Identifying frequently used commands and patterns"
+  },
+  {
+    "content": "Update CLAUDE.md with comprehensive codebase insights",
+    "status": "pending",
+    "activeForm": "Updating CLAUDE.md with comprehensive codebase insights"
+  }
+]

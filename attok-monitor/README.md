@@ -1,117 +1,73 @@
-# Attok Monitor Chrome Extension
+# attok.co.kr 출결 모니터링 시스템
 
-A Chrome extension for monitoring student attendance on attok.co.kr by detecting sky blue background elements and extracting Korean student names.
+학원 출결 상태를 실시간으로 모니터링하는 Python 애플리케이션
 
-## Features
+## 주요 기능
 
-- **Automatic Detection**: Detects sky blue background elements containing student names
-- **Real-time Monitoring**: Monitors attendance every 30 seconds when enabled
-- **Timer Functionality**: Tracks remaining class time (default 90 minutes)
-- **Notifications**: Alerts 10 minutes before class ends and when class ends
-- **Persistent Storage**: Maintains student data across browser sessions
-- **Debug Tools**: Built-in debugging functions for troubleshooting
+- 수동 로그인 후 자동 모니터링
+- 학생 출결 상태 실시간 감지 (박스 색상 변화)
+- 출석/하원 시간 자동 기록
+- 수업 시간 타이머 기능
+- 터미널 컬러 출력
 
-## Installation
+## 설치 방법
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" in the top-right corner
-3. Click "Load unpacked" and select the `attok-monitor` folder
-4. The extension will appear in your extensions list
-
-## Usage
-
-1. **Navigate to attok.co.kr**: Open the attendance page on attok.co.kr
-2. **Open Extension**: Click the Attok Monitor extension icon in Chrome toolbar
-3. **Start Monitoring**: Click "모니터링 시작" button
-4. **Manual Check**: Use "지금 확인" button for immediate attendance check
-
-## File Structure
-
-```
-attok-monitor/
-├── manifest.json     # Extension configuration
-├── popup.html        # Extension popup interface
-├── popup.js         # Popup control logic
-├── background.js    # Background monitoring service
-├── content.js       # Sky blue detection and name extraction
-└── README.md        # This file
+1. Chrome 브라우저 설치 필요
+2. Python 패키지 설치:
+```bash
+pip install -r requirements.txt
 ```
 
-## Debugging
+## 사용 방법
 
-### If sky blue detection isn't working:
-1. Open browser console on attok.co.kr page
-2. Type `window.debugAttok.testColors()` to test color detection
-3. Type `window.debugAttok.debugColors()` to see all page colors
+### 1단계: 구조 테스트
+```bash
+python test_parser.py
+```
+- 수동 로그인 후 페이지 구조 분석
+- 적절한 HTML 셀렉터 확인
 
-### If student names aren't extracted:
-1. Type `window.debugAttok.findStudents()` in console
-2. Check console output for detected elements
-3. Use `window.debugAttok.checkElement(element)` on specific elements
+### 2단계: 모니터링 실행
+```bash
+python monitor.py
+```
+- 브라우저가 열리면 수동으로 로그인
+- Enter 키를 눌러 모니터링 시작
+- Ctrl+C로 종료
 
-### If notifications don't work:
-1. Check browser notification permissions
-2. Look for console errors in background script
-3. Verify alarm permissions are granted
+## 파일 구조
 
-## Technical Details
+- `monitor.py` - 메인 모니터링 스크립트
+- `test_parser.py` - HTML 구조 분석 도구
+- `config.json` - 설정 파일 (수업 시간, 알림 등)
+- `requirements.txt` - Python 의존성
 
-### Sky Blue Detection
-The extension detects multiple sky blue color formats:
-- RGB: `rgb(135, 206, 235)`
-- RGBA: `rgba(135, 206, 235, ...)`
-- Hex: `#87CEEB`
-- Color names: `skyblue`, `lightblue`, `powderblue`
-- Similar colors in RGB range: R:100-180, G:180-230, B:200-255
+## 설정 파일 (config.json)
 
-### Korean Name Extraction
-- Uses regex pattern: `/[가-힣]{2,4}/g`
-- Filters out common non-name words: '학생', '이름', '성명', etc.
-- Searches within table rows and background-colored elements
+- `monitoring.check_interval`: 체크 주기 (초)
+- `students.default_settings`: 기본 수업 시간 설정
+- `students.custom_settings`: 학생별 개별 설정
 
-### Monitoring Schedule
-- **Automatic**: Every 30 seconds when monitoring is enabled
-- **Manual**: On-demand via "지금 확인" button
-- **Notifications**: 10 minutes before end and at class end time
+## 개발 현황
 
-## Permissions
+### 완료된 기능
+- [x] Chrome 브라우저 제어
+- [x] 수동 로그인 지원
+- [x] 학생 수 파싱
+- [x] 학생 목록 파싱
+- [x] 출결 상태 감지 로직
+- [x] 실시간 모니터링 루프
+- [x] 컬러 터미널 출력
 
-- `tabs`: Access tab information and communicate with content scripts
-- `storage`: Store student data and settings
-- `notifications`: Send desktop notifications
-- `alarms`: Schedule periodic monitoring checks
-- `activeTab`: Access current active tab
-- `host_permissions`: Access attok.co.kr domain
+### 예정된 기능
+- [ ] 정확한 HTML 셀렉터 확정 (test_parser.py 결과 기반)
+- [ ] 타이머 기능 완성
+- [ ] 알림 시스템
+- [ ] 로그 파일 저장
+- [ ] GUI 버전
 
-## Settings
+## 주의사항
 
-- **Class Duration**: Adjustable from 30-180 minutes (default: 90 minutes)
-- **Monitoring Status**: Toggle automatic monitoring on/off
-- **Persistent Data**: Student start times saved across sessions
-
-## Troubleshooting
-
-### Extension not working:
-1. Refresh the attok.co.kr page
-2. Reload the extension in `chrome://extensions/`
-3. Check console for error messages
-
-### No students detected:
-1. Ensure you're on the correct attendance page
-2. Verify elements have sky blue backgrounds
-3. Use debugging tools to inspect page structure
-
-### Notifications not showing:
-1. Check Chrome notification permissions
-2. Ensure notifications are enabled for the extension
-3. Try clicking a test notification
-
-## Version History
-
-**v1.0.0**
-- Initial release
-- Sky blue box detection
-- Korean name extraction
-- 90-minute timer
-- Background monitoring
-- Desktop notifications
+- 첫 실행 시 test_parser.py로 HTML 구조 확인 필요
+- 웹사이트 구조 변경 시 셀렉터 업데이트 필요
+- Chrome 버전과 selenium 호환성 확인

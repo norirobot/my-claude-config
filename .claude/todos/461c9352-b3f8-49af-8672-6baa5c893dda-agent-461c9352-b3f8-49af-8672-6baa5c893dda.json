@@ -1,0 +1,17 @@
+[
+  {
+    "content": "브라우저 캐시 문제 완전 해결",
+    "status": "completed",
+    "activeForm": "브라우저 캐시 문제를 완전히 해결하는 중"
+  },
+  {
+    "content": "근본적인 파일 로딩 문제 진단",
+    "status": "in_progress",
+    "activeForm": "근본적인 파일 로딩 문제를 진단하는 중"
+  },
+  {
+    "content": "완전히 새로운 접근법으로 문제 해결",
+    "status": "pending",
+    "activeForm": "완전히 새로운 접근법으로 문제를 해결하는 중"
+  }
+]

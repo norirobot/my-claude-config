@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Phase 7: Final Polish 시작",
+    "status": "in_progress",
+    "activeForm": "Phase 7: Final Polish 시작 중"
+  },
+  {
+    "content": "에러 핸들링 강화 (프론트엔드)",
+    "status": "completed",
+    "activeForm": "에러 핸들링 강화 완료"
+  },
+  {
+    "content": "사용자 인증 시스템 구현",
+    "status": "completed",
+    "activeForm": "사용자 인증 시스템 구프료"
+  },
+  {
+    "content": "성능 최적화 & 번들 크기 감소",
+    "status": "completed",
+    "activeForm": "성능 최적화 완료"
+  },
+  {
+    "content": "반응형 디자인 점검",
+    "status": "in_progress",
+    "activeForm": "반응형 디자인 점검 중"
+  },
+  {
+    "content": "접근성 개선",
+    "status": "pending",
+    "activeForm": "접근성 개선 중"
+  },
+  {
+    "content": "최종 테스트",
+    "status": "pending",
+    "activeForm": "최종 테스트 중"
+  }
+]

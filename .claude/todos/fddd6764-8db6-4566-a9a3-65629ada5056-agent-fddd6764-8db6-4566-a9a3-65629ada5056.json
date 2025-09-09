@@ -1,0 +1,17 @@
+[
+  {
+    "content": "수정된 셀렉터와 스카이블루 감지로 학생 출석 테스트",
+    "status": "in_progress",
+    "activeForm": "수정된 셀렉터와 스카이블루 감지로 학생 출석 테스트 중"
+  },
+  {
+    "content": "올바른 셀렉터 발견 (4개 div 요소)",
+    "status": "completed",
+    "activeForm": "올바른 셀렉터 발견 중"
+  },
+  {
+    "content": "시간 형식 및 스카이블루 배경 감지 문제 해결",
+    "status": "pending",
+    "activeForm": "시간 형식 및 스카이블루 배경 감지 문제 해결 중"
+  }
+]

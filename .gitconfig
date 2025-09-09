@@ -1,0 +1,28 @@
+[user]
+	name = Your Name
+	email = sinttogi@naver.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	autocrlf = true
+	editor = code --wait
+
+[color]
+	ui = auto
+
+[push]
+	default = current
+
+[pull]
+	rebase = false
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	cm = commit -m
+	lg = log --oneline --graph --decorate --all
+	unstage = reset HEAD --
+	last = log -1 HEAD

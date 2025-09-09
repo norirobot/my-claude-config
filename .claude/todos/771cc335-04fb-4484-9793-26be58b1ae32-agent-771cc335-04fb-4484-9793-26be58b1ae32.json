@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Create attok-monitor Chrome Extension project structure",
+    "status": "completed",
+    "id": "1"
+  },
+  {
+    "content": "Create manifest.json with Chrome Extension v3 configuration",
+    "status": "completed",
+    "id": "2"
+  },
+  {
+    "content": "Create content.js for detecting sky blue boxes and student names",
+    "status": "completed",
+    "id": "3"
+  },
+  {
+    "content": "Create popup.html with monitoring interface",
+    "status": "completed",
+    "id": "4"
+  },
+  {
+    "content": "Create popup.js for popup control logic",
+    "status": "completed",
+    "id": "5"
+  },
+  {
+    "content": "Create background.js for background monitoring service",
+    "status": "completed",
+    "id": "6"
+  },
+  {
+    "content": "Add debugging functions and test features",
+    "status": "completed",
+    "id": "7"
+  }
+]

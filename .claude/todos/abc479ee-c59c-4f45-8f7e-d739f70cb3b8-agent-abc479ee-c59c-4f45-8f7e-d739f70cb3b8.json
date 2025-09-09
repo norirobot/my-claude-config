@@ -1,0 +1,37 @@
+[
+  {
+    "content": "프로젝트 디렉토리 구조 생성",
+    "status": "completed",
+    "id": "1"
+  },
+  {
+    "content": "Flask 앱 메인 파일 (app.py) 작성",
+    "status": "completed",
+    "id": "2"
+  },
+  {
+    "content": "HTML 템플릿 (index.html) 작성",
+    "status": "in_progress",
+    "id": "3"
+  },
+  {
+    "content": "CSS 스타일 파일 작성",
+    "status": "pending",
+    "id": "4"
+  },
+  {
+    "content": "JavaScript 파일 작성",
+    "status": "pending",
+    "id": "5"
+  },
+  {
+    "content": "샘플 데이터 파일 (students.xlsx) 생성",
+    "status": "pending",
+    "id": "6"
+  },
+  {
+    "content": "Git 저장소 초기화 및 커밋",
+    "status": "pending",
+    "id": "7"
+  }
+]

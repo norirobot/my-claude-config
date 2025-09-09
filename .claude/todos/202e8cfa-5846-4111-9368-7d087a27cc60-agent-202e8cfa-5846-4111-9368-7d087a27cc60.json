@@ -1,0 +1,32 @@
+[
+  {
+    "content": "scraper.py 로그인 부분 개선 - 안정성 향상",
+    "status": "completed",
+    "id": "1"
+  },
+  {
+    "content": "디버그 모드 및 로깅 강화",
+    "status": "completed",
+    "id": "2"
+  },
+  {
+    "content": "수동 로그인 대기 모드 추가",
+    "status": "completed",
+    "id": "3"
+  },
+  {
+    "content": "에러 처리 및 예외 처리 강화",
+    "status": "completed",
+    "id": "4"
+  },
+  {
+    "content": "monitor_attendance() 함수 에러 처리 강화",
+    "status": "completed",
+    "id": "5"
+  },
+  {
+    "content": "detect_student_cards() 함수 에러 처리 강화",
+    "status": "completed",
+    "id": "6"
+  }
+]

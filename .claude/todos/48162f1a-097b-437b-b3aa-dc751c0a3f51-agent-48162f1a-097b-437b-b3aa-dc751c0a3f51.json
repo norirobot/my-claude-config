@@ -1,0 +1,27 @@
+[
+  {
+    "content": "기본 프로젝트 관리 UI 구현 (목록, 생성)",
+    "status": "completed",
+    "activeForm": "기본 프로젝트 관리 UI 구현 완료"
+  },
+  {
+    "content": "10단계 워크플로우 폴더 인터페이스 구현",
+    "status": "completed",
+    "activeForm": "10단계 워크플로우 폴더 인터페이스 구현 완룼"
+  },
+  {
+    "content": "진행률 추적 및 상태 관리 기능",
+    "status": "completed",
+    "activeForm": "진행률 추적 및 상태 관리 기능 구현 완료"
+  },
+  {
+    "content": "AI 대본 생성 인터페이스 및 Mock 기능",
+    "status": "completed",
+    "activeForm": "AI 대본 생성 인터페이스 및 Mock 기능 구현 완료"
+  },
+  {
+    "content": "Electron 데스크톱 앱 변환 및 데이터베이스 연동",
+    "status": "in_progress",
+    "activeForm": "Electron 데스크톱 앱 변환 및 데이터베이스 연동 중"
+  }
+]

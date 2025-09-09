@@ -1,0 +1,57 @@
+[
+  {
+    "content": "Phase 5: Business Features 구현 계획",
+    "status": "completed",
+    "activeForm": "Planning Phase 5: Business Features implementation"
+  },
+  {
+    "content": "포인트 시스템 데이터베이스 설계",
+    "status": "completed",
+    "activeForm": "Designing points system database schema"
+  },
+  {
+    "content": "사용자 wallet 및 거래 내역 구현",
+    "status": "completed",
+    "activeForm": "Implementing user wallet and transaction history"
+  },
+  {
+    "content": "튜터 예약 시 포인트 차감 시스템 연동",
+    "status": "completed",
+    "activeForm": "Integrating point deduction with tutor booking system"
+  },
+  {
+    "content": "튜터 수수료 및 정산 시스템 구현",
+    "status": "completed",
+    "activeForm": "Implementing tutor commission and settlement system"
+  },
+  {
+    "content": "전체 비즈니스 시스템 테스트 및 검증",
+    "status": "completed",
+    "activeForm": "Testing and validating complete business system"
+  },
+  {
+    "content": "Phase 6: Gamification Features 설계",
+    "status": "completed",
+    "activeForm": "Designing Phase 6: Gamification Features"
+  },
+  {
+    "content": "레벨/업적/도전과제 데이터베이스 스키마 구현",
+    "status": "completed",
+    "activeForm": "Implementing levels/achievements/challenges database schema"
+  },
+  {
+    "content": "사용자 레벨 시스템 모델 구현",
+    "status": "completed",
+    "activeForm": "Implementing user level system model"
+  },
+  {
+    "content": "업적 시스템 모델 구현",
+    "status": "completed",
+    "activeForm": "Implementing achievement system model"
+  },
+  {
+    "content": "일일 도전과제 시스템 모델 구현",
+    "status": "in_progress",
+    "activeForm": "Implementing daily challenge system model"
+  }
+]

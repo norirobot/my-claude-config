@@ -1,0 +1,22 @@
+[
+  {
+    "content": "구버전 프로젝트 백업 및 정리",
+    "status": "in_progress",
+    "activeForm": "구버전 백업 중"
+  },
+  {
+    "content": "v1.0 태그 생성 및 커밋",
+    "status": "pending",
+    "activeForm": "v1.0 릴리즈 태그 생성 중"
+  },
+  {
+    "content": "PROJECTS.md 경로 업데이트",
+    "status": "pending",
+    "activeForm": "프로젝트 경로 정리 중"
+  },
+  {
+    "content": "v2.0 감성 마케팅 기획서 작성",
+    "status": "pending",
+    "activeForm": "Jennifer 전략 기반 기획서 작성 중"
+  }
+]

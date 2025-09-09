@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Resolve Chrome WebDriver compatibility issue",
+    "status": "pending",
+    "activeForm": "Resolving Chrome WebDriver compatibility issue"
+  },
+  {
+    "content": "Test real student detection with resolved driver",
+    "status": "pending",
+    "activeForm": "Testing real student detection with resolved driver"
+  },
+  {
+    "content": "Verify timer functionality with real data",
+    "status": "pending",
+    "activeForm": "Verifying timer functionality with real data"
+  },
+  {
+    "content": "Complete end-to-end monitoring test",
+    "status": "pending",
+    "activeForm": "Completing end-to-end monitoring test"
+  }
+]
