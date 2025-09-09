@@ -2,13 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📌 다음 세션 시작점 - 2025-01-10
+## 📌 다음 세션 시작점 - 2025-09-10
 ### ⚡ 즉시 확인 사항
-1. **영어 학습 앱 프로젝트 위치**:
-   - ✅ 최신: `my-claude-config/ai-english-tutor/`
-   - ❌ 구버전: `english-learning-tutor-app/` (삭제됨)
 
-2. **서버 실행 명령어**:
+1. **attok 출결 모니터링 완성** ⭐ NEW
+   ```bash
+   cd attok-monitor
+   python simple_gui_final.py  # 최종 완성 버전 실행
+   ```
+   - 개별 시간 조절, 실시간 정렬, 하원 표시 완료
+   - 자세한 내용: `attok-monitor/SESSION_2025_09_09.md` 참고
+
+2. **영어 학습 앱 프로젝트**:
+   - 위치: `my-claude-config/ai-english-tutor/`
    ```bash
    # Frontend (포트 3001)
    cd my-claude-config/ai-english-tutor/frontend && npm run dev
@@ -17,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    cd my-claude-config/ai-english-tutor/backend && PORT=3003 npm run dev
    ```
 
-3. **비주얼 노벨 모드 접속**:
+3. **비주얼 노벨 모드**:
    - URL: http://localhost:3001/visual-story
    - 로컬 애셋 시스템 구현 완료
 
