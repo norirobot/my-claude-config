@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📌 다음 세션 시작점 - 2025-09-09
+### ⚡ 즉시 확인 사항
+1. **영어 학습 앱 프로젝트 위치**:
+   - ✅ 최신: `my-claude-config/ai-english-tutor/`
+   - ❌ 구버전: `english-learning-tutor-app/` (삭제됨)
+
+2. **서버 실행 명령어**:
+   ```bash
+   # Frontend (포트 3001)
+   cd my-claude-config/ai-english-tutor/frontend && npm run dev
+   
+   # Backend (포트 3003)  
+   cd my-claude-config/ai-english-tutor/backend && PORT=3003 npm run dev
+   ```
+
+3. **오늘의 작업 계획**:
+   - 대시보드 기능 강화
+   - 언어 변환 시스템 개선
+   - AI 튜터 대화 기능 연동
+   - 사용자가 추가한 새로운 아이디어 구현
+
 ## 🏠 Home PC Setup Completed - 2025-09-02
 - SSH 키 설정 완료
 - GitHub 연동 성공

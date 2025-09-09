@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Attok Monitor",
+  "version": "1.0.0",
+  "description": "Monitor student attendance on attok.co.kr with sky blue box detection",
+  
+  "permissions": [
+    "tabs",
+    "storage",
+    "notifications",
+    "alarms",
+    "activeTab"
+  ],
+  
+  "host_permissions": [
+    "http://attok.co.kr/*",
+    "https://attok.co.kr/*",
+    "http://*.attok.co.kr/*",
+    "https://*.attok.co.kr/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "http://attok.co.kr/*",
+        "https://attok.co.kr/*",
+        "http://*.attok.co.kr/*",
+        "https://*.attok.co.kr/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Attok Monitor - Click to view attendance"
+  },
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

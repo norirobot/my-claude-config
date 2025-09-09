@@ -1,0 +1,48 @@
+{
+  "timestamp": "2025-09-08 14:30:55",
+  "students": {
+    "학생": {
+      "name": "학생",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "",
+      "parent_class": "menu01 topMenu01",
+      "last_seen": "14:30:53"
+    },
+    "상담": {
+      "name": "상담",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "",
+      "parent_class": "menu02 topMenu02",
+      "last_seen": "14:30:53"
+    },
+    "수납": {
+      "name": "수납",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "",
+      "parent_class": "menu03 topMenu03",
+      "last_seen": "14:30:53"
+    },
+    "원격지원": {
+      "name": "원격지원",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "btn light-blue dotum",
+      "parent_class": "",
+      "last_seen": "14:30:53"
+    },
+    "매뉴얼": {
+      "name": "매뉴얼",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "btn orange dotum tooltip2",
+      "parent_class": "",
+      "last_seen": "14:30:53"
+    },
+    "로그아웃": {
+      "name": "로그아웃",
+      "bg_color": "rgba(0, 0, 0, 0)",
+      "element_class": "btn light-gray dotum",
+      "parent_class": "",
+      "last_seen": "14:30:53"
+    }
+  },
+  "total_students": 6
+}

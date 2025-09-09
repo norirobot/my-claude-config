@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 학습 플랫폼</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- 로딩 화면 -->
+        <div id="loading" class="loading-screen">
+            <div class="spinner"></div>
+            <p>AI 학습 플랫폼을 로딩 중...</p>
+        </div>
+
+        <!-- 메인 네비게이션 -->
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <i class="fas fa-brain"></i>
+                <span>AI 학습</span>
+            </div>
+            
+            <div class="nav-controls">
+                <!-- 사용자 선택 -->
+                <div class="user-selector">
+                    <select id="userSelect">
+                        <option value="">사용자 선택</option>
+                    </select>
+                    <button id="addUserBtn" class="btn-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </div>
+
+                <!-- 과목 탭 -->
+                <div class="subject-tabs" id="subjectTabs">
+                    <!-- 동적 생성 -->
+                </div>
+
+                <!-- 설정 -->
+                <div class="settings">
+                    <button id="settingsBtn" class="btn-icon">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="themeToggle" class="btn-icon">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="main-content">
+            <!-- 대시보드 -->
+            <section id="dashboard" class="screen active">
+                <div class="dashboard-grid">
+                    <!-- 파일 업로드 영역 -->
+                    <div class="card upload-area">
+                        <h2><i class="fas fa-upload"></i> 학습 자료 업로드</h2>
+                        <div class="drop-zone" id="dropZone">
+                            <i class="fas fa-file-upload"></i>
+                            <p>PDF 또는 TXT 파일을 드래그하거나 클릭하여 업로드</p>
+                            <input type="file" id="fileInput" accept=".pdf,.txt" multiple>
+                            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                                파일 선택
+                            </button>
+                        </div>
+                        <div class="file-list" id="fileList">
+                            <!-- 업로드된 파일 목록 -->
+                        </div>
+                    </div>
+
+                    <!-- 학습 현황 -->
+                    <div class="card stats-overview">
+                        <h2><i class="fas fa-chart-line"></i> 학습 현황</h2>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalQuestions">0</div>
+                                <div class="stat-label">총 문제수</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="correctRate">0%</div>
+                                <div class="stat-label">정답률</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="weakProblems">0</div>
+                                <div class="stat-label">취약 문제</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="studyTime">0h</div>
+                                <div class="stat-label">학습 시간</div>
+                            </div>
+                        </div>
+                        <div class="progress-chart" id="progressChart">
+                            <!-- Chart.js 차트 -->
+                        </div>
+                    </div>
+
+                    <!-- 빠른 시작 -->
+                    <div class="card quick-start">
+                        <h2><i class="fas fa-play"></i> 빠른 시작</h2>
+                        <div class="quick-actions">
+                            <button class="action-btn" id="startQuizBtn">
+                                <i class="fas fa-question-circle"></i>
+                                <span>퀴즈 시작</span>
+                            </button>
+                            <button class="action-btn" id="reviewWeakBtn">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>취약점 복습</span>
+                            </button>
+                            <button class="action-btn" id="viewAnalyticsBtn">
+                                <i class="fas fa-analytics"></i>
+                                <span>분석 보기</span>
+                            </button>
+                            <button class="action-btn" id="wrongNoteBtn">
+                                <i class="fas fa-book"></i>
+                                <span>오답노트</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 퀴즈 화면 -->
+            <section id="quiz" class="screen">
+                <div class="quiz-container">
+                    <div class="quiz-header">
+                        <div class="quiz-progress">
+                            <span id="questionNumber">1</span> / <span id="totalQuestions">20</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                        </div>
+                        <div class="quiz-controls">
+                            <button class="btn-secondary" id="pauseBtn">
+                                <i class="fas fa-pause"></i> 일시정지
+                            </button>
+                            <button class="btn-danger" id="quitBtn">
+                                <i class="fas fa-times"></i> 종료
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="question-area">
+                        <div class="question-text" id="questionText">
+                            문제가 여기에 표시됩니다.
+                        </div>
+                        <div class="options-container" id="optionsContainer">
+                            <!-- 선택지들이 동적으로 생성 -->
+                        </div>
+                    </div>
+
+                    <div class="quiz-footer">
+                        <div class="quiz-info">
+                            <span class="timer" id="timer">05:00</span>
+                            <span class="difficulty" id="difficulty">중급</span>
+                        </div>
+                        <div class="quiz-navigation">
+                            <button class="btn-secondary" id="prevBtn" disabled>
+                                <i class="fas fa-arrow-left"></i> 이전
+                            </button>
+                            <button class="btn-primary" id="nextBtn">
+                                다음 <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 분석 화면 -->
+            <section id="analytics" class="screen">
+                <div class="analytics-container">
+                    <h1><i class="fas fa-chart-bar"></i> 학습 분석</h1>
+                    
+                    <div class="analytics-grid">
+                        <div class="card chart-card">
+                            <h3>정답률 추이</h3>
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        
+                        <div class="card chart-card">
+                            <h3>카테고리별 성과</h3>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        
+                        <div class="card chart-card">
+                            <h3>취약 문제 TOP 10</h3>
+                            <canvas id="weaknessChart"></canvas>
+                        </div>
+                        
+                        <div class="card chart-card">
+                            <h3>학습 캘린더</h3>
+                            <div id="learningCalendar"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 오답노트 화면 -->
+            <section id="wrongNote" class="screen">
+                <div class="wrong-note-container">
+                    <h1><i class="fas fa-book-open"></i> 오답노트</h1>
+                    
+                    <div class="filters">
+                        <select id="categoryFilter">
+                            <option value="">전체 카테고리</option>
+                        </select>
+                        <select id="difficultyFilter">
+                            <option value="">전체 난이도</option>
+                            <option value="easy">쉬움</option>
+                            <option value="medium">보통</option>
+                            <option value="hard">어려움</option>
+                        </select>
+                        <input type="text" id="searchInput" placeholder="문제 검색...">
+                    </div>
+
+                    <div class="wrong-questions" id="wrongQuestions">
+                        <!-- 오답 문제들이 동적으로 생성 -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 모달 창들 -->
+        <!-- 사용자 추가 모달 -->
+        <div id="userModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>새 사용자 추가</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="form-group">
+                            <label for="userName">사용자명</label>
+                            <input type="text" id="userName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userSubjects">관심 과목</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" value="전기기능사"> 전기기능사</label>
+                                <label><input type="checkbox" value="소방관리사"> 소방관리사</label>
+                                <label><input type="checkbox" value="정보처리기사"> 정보처리기사</label>
+                                <label><input type="checkbox" value="기타"> 기타</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeModal('userModal')">취소</button>
+                    <button class="btn-primary" onclick="createUser()">생성</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 설정 모달 -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>설정</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <h3>퀴즈 설정</h3>
+                        <div class="form-group">
+                            <label for="questionsPerSession">세션당 문제수</label>
+                            <input type="number" id="questionsPerSession" value="20" min="5" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="timeLimit">제한시간 (분)</label>
+                            <input type="number" id="timeLimit" value="30" min="1" max="120">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3>데이터 관리</h3>
+                        <button class="btn-secondary" onclick="exportData()">
+                            <i class="fas fa-download"></i> 데이터 내보내기
+                        </button>
+                        <button class="btn-secondary" onclick="importData()">
+                            <i class="fas fa-upload"></i> 데이터 가져오기
+                        </button>
+                        <button class="btn-danger" onclick="resetData()">
+                            <i class="fas fa-trash"></i> 데이터 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.min.js"></script>
+    
+    <!-- 핵심 모듈 -->
+    <script src="src/core/app.js"></script>
+    <script src="src/core/userManager.js"></script>
+    <script src="src/core/subjectManager.js"></script>
+    
+    <!-- 파서 모듈 -->
+    <script src="src/parser/fileParser.js"></script>
+    <script src="src/parser/contentAnalyzer.js"></script>
+    
+    <!-- 생성기 모듈 -->
+    <script src="src/generators/questionGenerator.js"></script>
+    <script src="src/generators/aiValidator.js"></script>
+    
+    <!-- 저장소 모듈 -->
+    <script src="src/storage/dataManager.js"></script>
+    <script src="src/storage/statistics.js"></script>
+    
+    <!-- UI 모듈 -->
+    <script src="src/ui/screenManager.js"></script>
+    <script src="src/ui/quizManager.js"></script>
+    <script src="src/ui/chartManager.js"></script>
+    
+    <!-- 분석 모듈 -->
+    <script src="src/analytics/learningAnalytics.js"></script>
+    <script src="src/analytics/weaknessAnalyzer.js"></script>
+    
+    <!-- 메인 스크립트 -->
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

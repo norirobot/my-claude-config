@@ -1,0 +1,98 @@
+# Windows System Files
+NTUSER.DAT*
+ntuser.*
+*.LOG1
+*.LOG2
+*.TM.blf
+*.regtrans-ms
+*.7z
+
+# IDE and Editor folders
+.cursor/
+.vscode/
+.eclipse/
+.arduinoIDE/
+eclipse/
+eclipse-workspace/
+.windsurf/
+.codeium/
+
+# Cache and temp
+.cache/
+.wdm/
+AppData/
+Downloads/
+Videos/
+Music/
+OneDrive/
+Contacts/
+Favorites/
+Links/
+Searches/
+CrossDevice/
+CascadeProjects/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log
+logs/
+vmlogs/
+
+# Config files (sensitive)
+.ssh/
+.docker/
+.android/
+.config/
+.matplotlib/
+.p2/
+.dotnet/
+
+# System
+"Saved Games/"
+"시작 메뉴/"
+Templates/
+SendTo/
+Recent/
+PrintHood/
+NetHood/
+"My Documents/"
+"Local Settings/"
+"Documents/My Music/"
+"Documents/My Pictures/"
+"Documents/My Videos/"
+Cookies/
+"Application Data/"
+
+# Misc
+*.ini
+nul
+output/
+dotfiles/
+
+# Keep these
+!CLAUDE.md
+!PROJECTS.md
+!*.py
+!*.bat
+!*.md
+!my-claude-config/
+!volty-creator-studio/
+!attok-monitor/
+!eduok-monitor/
+!academy_monitor/
+!ai-learning-platform/
