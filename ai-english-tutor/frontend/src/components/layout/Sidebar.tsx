@@ -23,10 +23,12 @@ import {
   Settings as SettingsIcon,
   EmojiEvents as TrophyIcon,
   Notifications as NotificationIcon,
-  Home as HomeIcon
+  Home as HomeIcon,
+  AutoStories as StoryIcon
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { useBreakpoint } from '../../utils/responsive'
 
 interface SidebarProps {
   open: boolean
@@ -61,6 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       icon: <ChatIcon />,
       description: language === 'ko' ? 'AI 튜터와 영어 대화' : 'Chat with AI tutor',
       badge: 'HOT'
+    },
+    {
+      text: language === 'ko' ? '스토리 모드' : 'Story Mode',
+      path: '/story',
+      icon: <StoryIcon />,
+      description: language === 'ko' ? 'AI 캐릭터와 스토리 만들기' : 'Create stories with AI characters',
+      badge: 'NEW'
     },
     {
       text: t.nav.tutors,

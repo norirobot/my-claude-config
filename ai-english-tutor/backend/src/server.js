@@ -12,6 +12,19 @@ app.use(cors({
 
 app.use(express.json());
 
+// Story Routes 추가
+const storyRoutes = require('./routes/storyRoutes');
+app.use('/api/story', storyRoutes);
+
+// JSON 파싱 에러 핸들러
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('Bad JSON:', err.message);
+    return res.status(400).json({ error: 'Invalid JSON format' });
+  }
+  next();
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 

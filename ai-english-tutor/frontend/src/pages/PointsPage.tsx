@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { useApiState } from '../hooks/useApiState'
+import { getErrorMessage } from '../utils/errorHandler'
 import {
   Box,
   Typography,
@@ -47,8 +49,7 @@ interface Transaction {
 }
 
 const PointsPage: React.FC = () => {
-  const [pointsData, setPointsData] = useState<PointsData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { state, execute } = useApiState<PointsData>()
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState('basic')
   const [alertMessage, setAlertMessage] = useState('')
@@ -86,15 +87,16 @@ const PointsPage: React.FC = () => {
   }, [])
 
   const fetchPointsData = async () => {
-    try {
+    const result = await execute(async () => {
       const response = await fetch('http://localhost:3001/api/points/1')
-      const data = await response.json()
-      setPointsData(data)
-    } catch (error) {
-      console.error('Failed to fetch points data:', error)
-      showAlert('포인트 정보를 불러오는데 실패했습니다.', 'error')
-    } finally {
-      setLoading(false)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      return await response.json()
+    })
+
+    if (!result && state.error) {
+      showAlert(getErrorMessage(state.error), 'error')
     }
   }
 
@@ -156,7 +158,7 @@ const PointsPage: React.FC = () => {
     setTimeout(() => setAlertMessage(''), 5000)
   }
 
-  if (loading) {
+  if (state.loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
         <Typography>로딩 중...</Typography>
@@ -190,7 +192,7 @@ const PointsPage: React.FC = () => {
                 <Grid item xs={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.50' }}>
                     <Typography variant="h4" color="primary.main" fontWeight="bold">
-                      {pointsData?.totalPoints || 0}
+                      {state.data?.totalPoints || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       총 획득 포인트
@@ -200,7 +202,7 @@ const PointsPage: React.FC = () => {
                 <Grid item xs={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.50' }}>
                     <Typography variant="h4" color="success.main" fontWeight="bold">
-                      {pointsData?.availablePoints || 0}
+                      {state.data?.availablePoints || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       사용 가능 포인트
@@ -210,7 +212,7 @@ const PointsPage: React.FC = () => {
                 <Grid item xs={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.50' }}>
                     <Typography variant="h4" color="warning.main" fontWeight="bold">
-                      {pointsData?.usedPoints || 0}
+                      {state.data?.usedPoints || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       사용한 포인트
@@ -229,7 +231,7 @@ const PointsPage: React.FC = () => {
                 포인트 사용 내역
               </Typography>
               <List>
-                {pointsData?.transactions.map((transaction) => (
+                {state.data?.transactions.map((transaction) => (
                   <React.Fragment key={transaction.id}>
                     <ListItem>
                       <ListItemText

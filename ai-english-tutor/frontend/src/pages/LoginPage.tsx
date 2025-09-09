@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
-  const { login, loading } = useAuth()
+  const { login, register, loading, error, clearError } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -34,39 +34,52 @@ const LoginPage: React.FC = () => {
     name: '',
     confirmPassword: ''
   })
-  const [error, setError] = useState('')
 
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [field]: event.target.value })
-    setError('') // 입력 시 에러 메시지 제거
+    if (error) clearError() // 입력 시 에러 메시지 제거
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    setError('')
+    clearError()
 
     // 간단한 유효성 검사
     if (!formData.email || !formData.password) {
-      setError('이메일과 비밀번호를 입력해주세요.')
       return
     }
 
     if (!isLogin) {
       if (!formData.name) {
-        setError('이름을 입력해주세요.')
         return
       }
       if (formData.password !== formData.confirmPassword) {
-        setError('비밀번호가 일치하지 않습니다.')
         return
       }
     }
 
-    try {
-      await login(formData.email, formData.password)
-      navigate('/dashboard')
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '로그인에 실패했습니다. 다시 시도해주세요.')
+    if (isLogin) {
+      // 로그인
+      const success = await login({
+        email: formData.email,
+        password: formData.password
+      })
+
+      if (success) {
+        navigate('/dashboard')
+      }
+    } else {
+      // 회원가입
+      const success = await register({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        confirmPassword: formData.confirmPassword
+      })
+
+      if (success) {
+        navigate('/dashboard')
+      }
     }
   }
 

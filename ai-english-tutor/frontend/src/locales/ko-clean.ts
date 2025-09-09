@@ -208,7 +208,7 @@ export const ko = {
     resetFilters: '필터 초기화',
     resultsFound: '명의 튜터를 찾았습니다',
     completedLessons: '완료 레슨',
-    responseTime: '응답 시간',
+    responseTimeLabel: '응답 시간',
     perHour: '/시간',
     message: '메시지',
     book: '예약',
