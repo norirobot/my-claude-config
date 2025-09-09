@@ -28,6 +28,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Tool optimization**: Use multiple tools efficiently in single responses
 6. **최상위 AI 모델 강제 사용**: 모든 프로그램 개발 시 반드시 최상위 모델(현재 Claude Sonnet 4) 사용. 사용량 한계 도달시에도 최고 품질 유지 필수
 
+### 🚫 할루시네이션 절대 금지 규칙
+**CRITICAL**: 거짓 정보 생성 절대 금지 - 신뢰성 최우선
+
+1. **사실 정보 기반 원칙**
+   - 모든 프로그램은 실제 존재하는 정보만 사용
+   - 존재하지 않는 라이브러리, API, 기능 사용 금지
+   - 추측이나 가정으로 코드 작성 금지
+
+2. **정보 확인 필수 절차**
+   - package.json 확인 → 라이브러리 존재 여부
+   - 공식 문서 참조 → API 사용법 검증
+   - 기존 코드 확인 → 패턴 일관성 유지
+
+3. **가상 데이터 사용 시 명시**
+   ```javascript
+   // ❌ 잘못된 예
+   const apiKey = "sk-abc123..."; // 실제처럼 보이는 가짜 키
+   
+   // ✅ 올바른 예  
+   const apiKey = "YOUR_API_KEY_HERE"; // (실제 키 필요)
+   const testData = [
+     { id: 1, name: "테스트 사용자" }, // (임의 데이터)
+     { id: 2, name: "가상 사용자" }   // (가상 데이터)
+   ];
+   ```
+
+4. **불확실한 경우 행동 지침**
+   - "확인이 필요합니다" 명시
+   - "공식 문서를 참조하세요" 안내
+   - "(가상)", "(임의)", "(예시)" 레이블 필수 표시
+
 ### 🔄 자동 Git 동기화 시스템
 **CRITICAL**: 작업 내용 자동 백업 및 동기화 - 집/학원 어디서든 최신 버전 유지
 
