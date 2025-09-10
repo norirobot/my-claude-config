@@ -2,6 +2,313 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🏗️ Codebase Architecture
+
+### Project Structure Overview
+
+This is a multi-project repository containing:
+
+#### 🎓 **Main Application: AI English Learning Tutor**
+**Location**: `./ai-english-tutor/`
+
+The primary application is an AI-powered English learning platform with tutor matching:
+
+```
+ai-english-tutor/
+├── backend/               # Express.js API server
+│   ├── src/
+│   │   ├── server.js     # Main server entry point
+│   │   ├── routes/       # API routes (story, tutors, sessions)
+│   │   ├── services/     # Business logic (OpenAI integration)
+│   │   └── models/       # Database models
+│   └── package.json      # Backend dependencies & scripts
+└── frontend/             # React + TypeScript web app  
+    ├── src/
+    │   ├── components/   # Reusable UI components
+    │   ├── pages/        # Page components (Dashboard, Chat, etc.)
+    │   ├── services/     # API integration
+    │   └── types/        # TypeScript type definitions
+    └── package.json      # Frontend dependencies & scripts
+```
+
+**Tech Stack**:
+- **Frontend**: React 18 + TypeScript + Material-UI + Vite
+- **Backend**: Node.js + Express + JavaScript
+- **Database**: SQLite (development)
+- **AI Integration**: OpenAI API for conversational AI
+
+#### 📊 **Python Analytics Tools**
+
+Multiple Streamlit-based analysis tools:
+
+- **`./puzzle_crypto_analysis/`**: Cryptocurrency technical analysis dashboard
+- **`./exam_generator/`**: AI-powered exam question generator
+- **`./attendance_notifier/`**: Attendance monitoring with Telegram notifications  
+- **`./attok-monitor/`**: Student attendance monitoring system (완성됨)
+
+#### 🔧 **Utility Scripts**
+
+Root-level Python scripts for automation:
+- **`simple_analysis.py`**: YouTube subtitle analysis automation
+- **`auto_crypto_analysis.py`**: Integrated crypto analysis
+- **`upbit_rsi_monitor.py`**: RSI indicator monitoring
+- **`run_monitor.py`**: System monitoring orchestrator
+
+### Key Technical Decisions
+
+1. **Multi-port development setup**: Frontend (3002), Backend (3001) for clear separation
+2. **TypeScript adoption**: Frontend uses strict TypeScript, backend uses JavaScript
+3. **Material-UI theming**: Consistent blue-themed UI across components
+4. **Clean Architecture**: Backend follows service-repository pattern
+5. **Python ecosystem**: Streamlit for rapid dashboard development
+
+## 🚀 Development Commands
+
+### AI English Tutor Application
+
+#### Frontend Development
+```bash
+cd ai-english-tutor/frontend
+npm run dev        # Start Vite development server (Port 3002)
+npm run build      # Build for production
+npm run lint       # ESLint code quality checks
+npm run preview    # Preview production build
+```
+
+#### Backend Development  
+```bash
+cd ai-english-tutor/backend
+npm run dev        # Start development server with nodemon (Port 3001)
+npm start          # Start production server
+npm test           # Run Jest test suite
+npm run test:watch # Run tests in watch mode
+npm run test:coverage # Generate test coverage report
+npm run lint       # ESLint code analysis
+npm run lint:fix   # Auto-fix linting issues
+```
+
+#### Full-Stack Development
+```bash
+# Terminal 1 - Backend
+cd ai-english-tutor/backend && npm run dev
+
+# Terminal 2 - Frontend  
+cd ai-english-tutor/frontend && npm run dev
+
+# Access at: http://localhost:3002 (frontend) + http://localhost:3001/api (backend)
+```
+
+### Python Analytics Tools
+
+#### Crypto Analysis Dashboard
+```bash
+cd puzzle_crypto_analysis
+streamlit run app_simple.py  # Main analysis dashboard
+python main.py              # CLI analysis mode
+python test_basic.py         # Basic functionality tests
+```
+
+#### Exam Generator
+```bash
+cd exam_generator
+streamlit run app_simple.py  # Recommended simple version
+streamlit run app.py         # Full featured version
+python test_generator.py     # CLI testing
+```
+
+#### Attendance Systems
+```bash
+# ATTOK Monitor (완성된 시스템)
+cd attok-monitor
+python simple_gui_final_v2.py  # Main stable version
+
+# Attendance Notifier
+cd attendance_notifier  
+python run.py               # Production notification system
+python test_app.py          # Test mode with DB verification
+```
+
+#### Root-Level Utilities
+```bash
+# YouTube Analysis
+python simple_analysis.py          # Subtitle download → analysis → organization
+
+# Crypto Monitoring
+python auto_crypto_analysis.py     # Automated crypto dashboard
+python upbit_rsi_monitor.py        # Upbit RSI monitoring + alerts
+python run_monitor.py              # Integrated monitoring system
+
+# Telegram Utilities
+python chat_id_finder.py           # Find Telegram chat IDs
+```
+
+### Global Python Environment
+
+This repository uses a comprehensive Python environment with 173+ packages for AI/ML, data analysis, and web applications:
+
+```bash
+# Install all Python dependencies
+pip install -r requirements.txt
+
+# Key packages included:
+# - streamlit: Web app framework
+# - openai: AI/ML integration
+# - pandas, numpy: Data analysis  
+# - selenium: Web automation
+# - python-telegram-bot: Bot integration
+# - transformers, torch: Deep learning
+```
+
+## 🔍 Code Patterns & Architecture
+
+### Frontend Patterns (React + TypeScript)
+
+**Component Structure**:
+```typescript
+// Consistent Material-UI component pattern
+import { Box, Typography, Button } from '@mui/material';
+import { styled } from '@mui/material/styles';
+
+// Styled components for custom theming
+const StyledContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+}));
+```
+
+**Service Layer**:
+```typescript
+// API integration pattern
+export const apiService = {
+  async fetchData<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    return response.json();
+  }
+};
+```
+
+### Backend Patterns (Express + JavaScript)
+
+**Route Structure**:
+```javascript
+// Clean route organization
+const express = require('express');
+const router = express.Router();
+
+// Service injection pattern
+const storyService = require('../services/storyService');
+
+router.get('/generate', async (req, res) => {
+  try {
+    const result = await storyService.generateStory(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+**Service Layer**:
+```javascript
+// Business logic separation
+class StoryService {
+  async generateStory(params) {
+    // OpenAI integration logic
+    // Data processing logic
+    // Return structured response
+  }
+}
+```
+
+### Python Streamlit Patterns
+
+**Dashboard Structure**:
+```python
+import streamlit as st
+import pandas as pd
+
+# Consistent page configuration
+st.set_page_config(page_title="Analytics Dashboard", layout="wide")
+
+# Sidebar navigation pattern
+with st.sidebar:
+    selected_option = st.selectbox("Analysis Type", options)
+
+# Main content organization
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Key Metric", value, delta)
+```
+
+## 🛠️ Testing & Quality Assurance
+
+### Frontend Testing
+- **ESLint**: Code quality and style enforcement
+- **TypeScript**: Compile-time type checking
+- **Vite**: Fast development builds
+
+### Backend Testing  
+- **Jest**: Unit and integration testing framework
+- **Supertest**: HTTP assertion testing
+- **ESLint**: JavaScript code analysis
+- **Nodemon**: Automatic development restarts
+
+### Python Quality
+- **Streamlit**: Built-in error handling and debugging
+- **Pytest**: Unit testing (when applicable)
+- **Type hints**: Gradual typing adoption
+
+## 🔧 Environment Configuration
+
+### Required Environment Variables
+
+**AI English Tutor**:
+```bash
+# Backend (.env)
+PORT=3001
+OPENAI_API_KEY=your_openai_key_here
+DATABASE_URL=sqlite:./data.db
+```
+
+**Python Analytics**:
+```bash
+# Various .env files for API keys
+TELEGRAM_BOT_TOKEN=your_token_here
+UPBIT_ACCESS_KEY=your_upbit_key
+UPBIT_SECRET_KEY=your_upbit_secret
+```
+
+### Database Setup
+
+**SQLite** (Development):
+```bash
+# No setup required - auto-created on first run
+# Files: ./ai-english-tutor/backend/data.db
+```
+
+## 📦 Deployment & Build
+
+### Production Build Process
+
+**Frontend**:
+```bash
+cd ai-english-tutor/frontend
+npm run build      # Creates ./dist/ folder
+npm run preview    # Test production build locally
+```
+
+**Backend**:
+```bash  
+cd ai-english-tutor/backend
+npm start          # Production mode with node
+```
+
+**Python Apps**:
+```bash
+# Streamlit apps can be deployed to Streamlit Cloud
+# Local production: streamlit run app.py --server.port 8501
+```
+
 ## 📌 다음 세션 시작점 - 2025-09-10 (완료됨)
 ### ✅ attok 출결 모니터링 시스템 100% 완성!
 
