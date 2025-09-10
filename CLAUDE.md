@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📌 다음 세션 시작점 - 2025-09-10 (완료됨)
+### ✅ attok 출결 모니터링 시스템 100% 완성!
+
+**📁 GitHub 위치**: `norirobot/my-claude-config/attok-monitor/`
+
+**🚀 메인 실행 파일**:
+```bash
+cd my-claude-config/attok-monitor
+python simple_gui_final_v2.py  # 안정적인 메인 버전
+```
+
+**✅ 완료된 핵심 기능들**:
+- ✅ **학생 출결 실시간 인식** (가장 중요한 기능 - 정상 작동 확인)
+- ✅ **브라우저 최소화** (로그인 후 자동으로 백그라운드 이동)
+- ✅ **세션 유지** (10초마다 자동 활동으로 로그아웃 방지)
+- ✅ **실시간 정렬** (남은 시간 순으로 카드 자동 정렬)
+- ✅ **하원 표시** 기능
+- ✅ **카드 스타일 UI** (깔끔한 디자인)
+- ✅ **CSV 내보내기** 기능
+
+**🔊 추가 개발 버전들** (참고용):
+- `simple_gui_clean.py`: 음성 알림 + 반응형 레이아웃 (TTS 문제로 보류)
+- `simple_gui_card_style.py`: 카드 디자인 버전
+- `popup_analyzer.py`: 팝업 분석 도구
+
+**💾 GitHub 커밋 완료**: 2025-09-10 모든 파일 업로드됨
+
 ## 🏠 Home PC Setup Completed - 2025-09-02
 - SSH 키 설정 완료
 - GitHub 연동 성공
