@@ -1,0 +1,25 @@
+{
+    "monitoring": {
+        "check_interval": 5,
+        "default_lesson_duration": 90
+    },
+    "students": {
+        "default_settings": {
+            "lesson_duration_minutes": 90,
+            "alert_before_end": 10
+        },
+        "custom_settings": {
+            "학생이름1": {
+                "lesson_duration_minutes": 60
+            },
+            "학생이름2": {
+                "lesson_duration_minutes": 120
+            }
+        }
+    },
+    "alerts": {
+        "enabled": false,
+        "sound": false,
+        "desktop_notification": false
+    }
+}
