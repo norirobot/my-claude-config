@@ -11,25 +11,129 @@ import threading
 import time
 from datetime import datetime, timedelta
 import winsound
+import pyttsx3  # TTS 음성 알림용
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException, NoSuchWindowException, TimeoutException
 import hashlib
-import csv
+# import csv  # CSV 기능 제거
 import os
+
+def interpolate_color(color1, color2, factor):
+    """두 색상 사이를 보간하는 함수 (factor: 0.0~1.0)"""
+    def hex_to_rgb(hex_color):
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    
+    def rgb_to_hex(rgb):
+        return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+    
+    rgb1 = hex_to_rgb(color1)
+    rgb2 = hex_to_rgb(color2)
+    
+    interpolated = tuple(int(rgb1[i] + factor * (rgb2[i] - rgb1[i])) for i in range(3))
+    return rgb_to_hex(interpolated)
+
+def get_time_based_colors(total_minutes):
+    """시간에 따른 부드러운 색상 그라데이션 계산"""
+    # 색상 기준점들 (분, 배경색, 글씨색, 테두리색) - 더 세밀한 그라데이션
+    color_points = [
+        (120, '#2d2d30', '#00d26a', '#00d26a'),  # 120분+ : 완전 안전 (선명한 녹색)
+        (90,  '#2d2d30', '#00d26a', '#00d26a'),  # 90분+  : 안전 (녹색)
+        (60,  '#2d2d30', '#00d26a', '#00d26a'),  # 60분+  : 안전 (녹색) 
+        (45,  '#2d2d30', '#7dd87d', '#7dd87d'),  # 45분+  : 여유 (밝은 녹색)
+        (30,  '#2d2d30', '#a3d977', '#a3d977'),  # 30분+  : 주의 준비 (연한 녹색)
+        (25,  '#2d2d30', '#d4e157', '#d4e157'),  # 25분+  : 노란녹색
+        (20,  '#2d2d30', '#ffeb3b', '#ffeb3b'),  # 20분+  : 노란색
+        (15,  '#2d2d30', '#ffb347', '#ffb347'),  # 15분+  : 연한 주황
+        (10,  '#2d2d30', '#ff9500', '#ff9500'),  # 10분+  : 진한 주황
+        (7,   '#2d2d30', '#ff8a50', '#ff8a50'),  # 7분+   : 주황-빨강 중간
+        (5,   '#2d2d30', '#ff7b7b', '#ff7b7b'),  # 5분+   : 연한 빨강
+        (3,   '#2d2d30', '#ff6b6b', '#ff6b6b'),  # 3분+   : 중간 빨강
+        (0,   '#2d2d30', '#ff5f57', '#ff5f57')   # 0분    : 진한 빨강
+    ]
+    
+    # 현재 시간이 어느 구간에 속하는지 찾기
+    for i in range(len(color_points) - 1):
+        upper_time, upper_bg, upper_fg, upper_border = color_points[i]
+        lower_time, lower_bg, lower_fg, lower_border = color_points[i + 1]
+        
+        if total_minutes >= lower_time:
+            if total_minutes >= upper_time:
+                # 상한값 이상이면 상한값 색상 사용
+                return upper_bg, upper_fg, upper_border
+            else:
+                # 두 지점 사이의 보간
+                factor = (total_minutes - lower_time) / (upper_time - lower_time)
+                bg_color = interpolate_color(lower_bg, upper_bg, factor)
+                fg_color = interpolate_color(lower_fg, upper_fg, factor)
+                border_color = interpolate_color(lower_border, upper_border, factor)
+                return bg_color, fg_color, border_color
+    
+    # 최소값 미만이면 최소값 색상 사용
+    return color_points[-1][1], color_points[-1][2], color_points[-1][3]
+
+def play_notification_sound(notification_type, student_name=None):
+    """알림음 및 음성 알림 재생 함수"""
+    try:
+        if notification_type == "arrival":
+            # 등원 알림음 (높은 톤, 짧게 2번)
+            winsound.Beep(800, 200)
+            time.sleep(0.1)
+            winsound.Beep(1000, 200)
+            
+            # 음성 알림 추가 (이름 → 1초 쉬기 → "등원")
+            if student_name:
+                engine = pyttsx3.init()
+                engine.setProperty('rate', 100)  # 더 천천히 (120 → 100)
+                engine.setProperty('volume', 1.0)  # 최대 볼륨 (0.9 → 1.0)
+                engine.say(student_name)  # 이름만 먼저
+                engine.runAndWait()
+                engine.stop()
+                time.sleep(1.5)  # 1.5초 쉬기 (더 긴 간격)
+                
+                engine = pyttsx3.init()
+                engine.setProperty('rate', 100)  # 더 천천히
+                engine.setProperty('volume', 1.0)  # 최대 볼륨
+                engine.say("등원")  # "등원"만 따로
+                engine.runAndWait()
+                engine.stop()
+                
+        elif notification_type == "departure":
+            # 하원 알림음 (낮은 톤, 길게 1번)
+            winsound.Beep(600, 400)
+            
+            # 음성 알림 추가 (이름 → 1.5초 쉬기 → "하원")
+            if student_name:
+                engine = pyttsx3.init()
+                engine.setProperty('rate', 100)  # 더 천천히 (120 → 100)
+                engine.setProperty('volume', 1.0)  # 최대 볼륨 (0.9 → 1.0)
+                engine.say(student_name)  # 이름만 먼저
+                engine.runAndWait()
+                engine.stop()
+                time.sleep(1.5)  # 1.5초 쉬기 (더 긴 간격)
+                
+                engine = pyttsx3.init()
+                engine.setProperty('rate', 100)  # 더 천천히
+                engine.setProperty('volume', 1.0)  # 최대 볼륨
+                engine.say("하원")  # "하원"만 따로
+                engine.runAndWait()
+                engine.stop()
+    except:
+        pass  # 알림 실패해도 프로그램에 영향 없음
 
 class FinalAttendanceGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("출결 모니터링 시스템 (최종 완성)")
+        self.root.title("RO&CO EDU-OK SYSTEM")
         self.root.geometry("1100x800")
         
-        # 다크 테마
-        self.bg_color = '#2b2b2b'
+        # 모던 Discord/Notion 스타일 테마
+        self.bg_color = '#1a1a1a'  # Rich Black
         self.fg_color = '#ffffff'
-        self.card_color = '#3c3c3c'
+        self.card_color = '#2d2d30'  # Discord Card
         
         self.root.configure(bg=self.bg_color)
         
@@ -48,54 +152,92 @@ class FinalAttendanceGUI:
         self.last_data_hash = ""
         self.last_widget_update = {}
         
-        # 로그 및 통계
-        self.session_start_time = None
-        self.total_monitoring_time = 0
+        # 등원/하원 알림 관리
+        self.notified_arrivals = set()      # 등원 알림을 이미 한 학생들
+        self.notified_departures = set()    # 하원 알림을 이미 한 학생들
+        self.already_departed = set()       # 이미 하원한 학생들 (중복 알림 방지)
+        self.initial_loading = True         # 초기 로딩 중인지 확인 (첫 로그인시 알림 방지)
+        
+        # 로그인 완료 버튼 깜빡임 제어
+        self.login_blinking = False
+        self.login_blink_state = True
+        self.original_login_bg = '#5865f2'  # Discord Blurple
+        
+        # 로그 및 통계 (세션 시간 기능 제거됨)
         
         self.setup_ui()
         
     def setup_ui(self):
         """UI 설정"""
-        # 제목
-        title = tk.Label(
-            self.root,
-            text="📚 출결 모니터링 시스템 (최종 완성)",
-            font=('맑은 고딕', 22, 'bold'),
-            bg=self.bg_color,
-            fg=self.fg_color
-        )
-        title.pack(pady=15)
+        # 상단 상태 바 (작고 모서리에 배치)
+        top_frame = tk.Frame(self.root, bg=self.bg_color, height=30)
+        top_frame.pack(fill='x', pady=(5, 0))
+        top_frame.pack_propagate(False)
         
-        # 상태 표시 프레임
-        status_main_frame = tk.Frame(self.root, bg=self.bg_color)
-        status_main_frame.pack(pady=10, fill='x')
-        
-        # 연결 상태
+        # 좌측: 브라우저 연결 상태 (작게)
         self.connection_label = tk.Label(
-            status_main_frame,
-            text="🔴 브라우저 연결 안됨",
-            font=('맑은 고딕', 14, 'bold'),
+            top_frame,
+            text="🔴 연결안됨",
+            font=('맑은 고딕', 9),
             bg=self.bg_color,
             fg='#F44336'
         )
-        self.connection_label.pack()
+        self.connection_label.pack(side='left', padx=5)
         
-        # 세션 정보
-        self.session_label = tk.Label(
-            status_main_frame,
-            text="⏰ 세션 시간: 00:00:00",
-            font=('맑은 고딕', 12),
-            bg=self.bg_color,
-            fg='#FFB74D'
+        # 우측: 재시작/정지 버튼 (작게)
+        control_frame = tk.Frame(top_frame, bg=self.bg_color)
+        control_frame.pack(side='right', padx=5)
+        
+        self.restart_btn = tk.Button(
+            control_frame,
+            text="🔄",
+            font=('맑은 고딕', 10),
+            bg='#ff9500',  # Discord Amber
+            fg='white',
+            command=self.restart_browser,
+            width=3,
+            height=1,
+            state='disabled',
+            relief=tk.FLAT,
+            borderwidth=0,
+            disabledforeground='#72767d',  # 비활성화 시 글씨색
+            activebackground='#e6850e'     # 활성화 시 hover 색상
         )
-        self.session_label.pack()
+        self.restart_btn.pack(side='left', padx=2)
         
-        # 버튼 프레임
-        button_frame = tk.Frame(self.root, bg=self.bg_color)
-        button_frame.pack(pady=15)
+        self.stop_btn = tk.Button(
+            control_frame,
+            text="⏹",
+            font=('맑은 고딕', 10),
+            bg='#ff5f57',  # Discord Red
+            fg='white',
+            command=self.stop_monitoring,
+            width=3,
+            height=1,
+            state='disabled',
+            relief=tk.FLAT,
+            borderwidth=0,
+            disabledforeground='#72767d',  # 비활성화 시 글씨색
+            activebackground='#e5514b'     # 활성화 시 hover 색상
+        )
+        self.stop_btn.pack(side='left', padx=2)
+        
+        # 제목
+        self.title_label = tk.Label(
+            self.root,
+            text="RO&CO EDU-OK SYSTEM",
+            font=('맑은 고딕', 16, 'bold'),
+            bg=self.bg_color,
+            fg=self.fg_color
+        )
+        self.title_label.pack(pady=(10, 10))
+        
+        # 버튼 프레임 (로그인 완료 후 숨김 처리용)
+        self.button_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.button_frame.pack(pady=15)
         
         # 첫 번째 줄 버튼들
-        top_buttons = tk.Frame(button_frame, bg=self.bg_color)
+        top_buttons = tk.Frame(self.button_frame, bg=self.bg_color)
         top_buttons.pack()
         
         # 시작 버튼
@@ -103,98 +245,45 @@ class FinalAttendanceGUI:
             top_buttons,
             text="▶ 시작",
             font=('맑은 고딕', 14, 'bold'),
-            bg='#4CAF50',
+            bg='#00d26a',  # Discord Green
             fg='white',
             command=self.start_monitoring,
             width=12,
-            height=2
+            height=2,
+            relief=tk.FLAT,
+            borderwidth=0,
+            disabledforeground='#72767d',  # 비활성화 시 글씨색
+            activebackground='#00b359'     # 활성화 시 hover 색상
         )
         self.start_btn.pack(side='left', padx=5)
         
-        # 재시작 버튼
-        self.restart_btn = tk.Button(
-            top_buttons,
-            text="🔄 재시작",
-            font=('맑은 고딕', 14, 'bold'),
-            bg='#FF9800',
-            fg='white',
-            command=self.restart_browser,
-            width=12,
-            height=2,
-            state='disabled'
-        )
-        self.restart_btn.pack(side='left', padx=5)
-        
-        # 정지 버튼
-        self.stop_btn = tk.Button(
-            top_buttons,
-            text="⏹ 정지",
-            font=('맑은 고딕', 14, 'bold'),
-            bg='#F44336',
-            fg='white',
-            command=self.stop_monitoring,
-            width=12,
-            height=2,
-            state='disabled'
-        )
-        self.stop_btn.pack(side='left', padx=5)
+        # 재시작/정지 버튼 상단으로 이동됨
         
         # 로그인 완료 버튼
         self.manual_login_btn = tk.Button(
             top_buttons,
             text="✓ 로그인 완료",
             font=('맑은 고딕', 14, 'bold'),
-            bg='#2196F3',
+            bg='#5865f2',  # Discord Blurple
             fg='white',
             command=self.confirm_manual_login,
             width=15,
             height=2,
-            state='disabled'
+            state='disabled',
+            relief=tk.FLAT,
+            borderwidth=0,
+            disabledforeground='#b9bbbe',  # 비활성화 시 글씨색
+            activebackground='#4752c4'     # 활성화 시 hover 색상
         )
         self.manual_login_btn.pack(side='left', padx=5)
         
         # 두 번째 줄 버튼들
-        bottom_buttons = tk.Frame(button_frame, bg=self.bg_color)
+        bottom_buttons = tk.Frame(self.button_frame, bg=self.bg_color)
         bottom_buttons.pack(pady=(10, 0))
         
-        # 전체 +10분 버튼
-        self.add_all_btn = tk.Button(
-            bottom_buttons,
-            text="⏰ 전체 +10분",
-            font=('맑은 고딕', 12),
-            bg='#9C27B0',
-            fg='white',
-            command=lambda: self.adjust_all_students(10),
-            width=12,
-            height=1
-        )
-        self.add_all_btn.pack(side='left', padx=5)
+        # 전체 시간 조절 버튼 제거됨
         
-        # 전체 -10분 버튼
-        self.sub_all_btn = tk.Button(
-            bottom_buttons,
-            text="⏰ 전체 -10분",
-            font=('맑은 고딕', 12),
-            bg='#795548',
-            fg='white',
-            command=lambda: self.adjust_all_students(-10),
-            width=12,
-            height=1
-        )
-        self.sub_all_btn.pack(side='left', padx=5)
-        
-        # 내보내기 버튼
-        self.export_btn = tk.Button(
-            bottom_buttons,
-            text="📄 CSV 내보내기",
-            font=('맑은 고딕', 12),
-            bg='#607D8B',
-            fg='white',
-            command=self.export_to_csv,
-            width=15,
-            height=1
-        )
-        self.export_btn.pack(side='left', padx=5)
+        # CSV 내보내기 버튼 제거됨
         
         # 상태 표시
         self.status_label = tk.Label(
@@ -243,9 +332,28 @@ class FinalAttendanceGUI:
         container.pack(fill='both', expand=True, padx=20, pady=10)
         
         canvas = tk.Canvas(container, bg=self.bg_color, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        
+        # 모던 Discord 스타일 스크롤바
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("Vertical.TScrollbar",
+                       background='#2d2d30',         # Discord 카드색
+                       troughcolor='#1a1a1a',        # 배경과 일치
+                       bordercolor='#40444b',        # 부드러운 테두리
+                       arrowcolor='#ffffff',         # 화살표 색상
+                       darkcolor='#2d2d30',          # 더 어두운 부분
+                       lightcolor='#40444b')         # 밝은 부분
+        
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview, style="Vertical.TScrollbar")
         
         self.student_frame = tk.Frame(canvas, bg=self.bg_color)
+        
+        # Grid 컬럼 크기 균등 설정 (반응형으로 동적 조절)
+        self.current_columns = 4  # 기본 4컬럼
+        self.configure_grid_columns()
+        
+        # 창 크기 변경 감지
+        self.root.bind('<Configure>', self.on_window_resize)
         
         canvas.create_window((0, 0), window=self.student_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
@@ -258,72 +366,157 @@ class FinalAttendanceGUI:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
+        # 마우스 휠 스크롤 기능 추가 (캔버스에만 바인딩)
+        def on_mousewheel(event):
+            # 스크롤 가능한 내용이 있는지 확인
+            if canvas.bbox("all") is None:
+                return
+            canvas_height = canvas.winfo_height()
+            content_height = canvas.bbox("all")[3]
+            
+            # 실제 스크롤이 필요한 경우에만 스크롤
+            if content_height > canvas_height:
+                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        # 캔버스와 student_frame에만 마우스 휠 바인딩 (root는 제외)
+        canvas.bind("<MouseWheel>", on_mousewheel)
+        self.student_frame.bind("<MouseWheel>", on_mousewheel)
+        
+        # 캔버스 레퍼런스 저장 (반응형 레이아웃용)
+        self.canvas = canvas
+        
         self.student_widgets = {}
         self.current_data = {}
         
         # 브라우저 상태 모니터링 시작
         self.check_browser_status()
         
-        # 세션 시간 업데이트 시작
-        self.update_session_time()
+        # 세션 시간 업데이트 기능 제거됨
     
-    def update_session_time(self):
-        """세션 시간 업데이트"""
-        if self.session_start_time:
-            elapsed = datetime.now() - self.session_start_time
-            hours = int(elapsed.total_seconds() // 3600)
-            minutes = int((elapsed.total_seconds() % 3600) // 60)
-            seconds = int(elapsed.total_seconds() % 60)
+    def configure_grid_columns(self):
+        """현재 컬럼 수에 따라 그리드 설정"""
+        # 기존 컬럼 설정 초기화 (최대 10컬럼까지 지원)
+        for i in range(10):
+            self.student_frame.grid_columnconfigure(i, weight=0)
+        
+        # 현재 컬럼 수만큼 균등 설정
+        for i in range(self.current_columns):
+            self.student_frame.grid_columnconfigure(i, weight=1, uniform="col")
+    
+    def calculate_optimal_columns(self, width):
+        """창 너비에 따른 최적 컬럼 수 계산 (화면 공간 최대 활용)"""
+        card_width = 240  # 카드 + 여백 포함 예상 너비
+        usable_width = width - 80   # 스크롤바, 패딩 제외 (여백 축소)
+        
+        # 화면 너비에 따라 동적으로 컬럼 수 계산
+        max_possible_columns = max(1, usable_width // card_width)
+        
+        # 최대 8컬럼까지 지원 (너무 많으면 가독성 저하)
+        return min(max_possible_columns, 8)
+    
+    def on_window_resize(self, event):
+        """창 크기 변경 시 처리"""
+        # root 창의 크기 변경만 처리 (다른 위젯 이벤트 무시)
+        if event.widget != self.root:
+            return
             
-            self.session_label.config(text=f"⏰ 세션 시간: {hours:02d}:{minutes:02d}:{seconds:02d}")
+        # 새로운 최적 컬럼 수 계산
+        new_columns = self.calculate_optimal_columns(event.width)
         
-        # 1초마다 업데이트
-        self.root.after(1000, self.update_session_time)
+        # 컬럼 수가 변경된 경우에만 재배치
+        if new_columns != self.current_columns:
+            self.current_columns = new_columns
+            self.configure_grid_columns()
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 창 크기 변경: {event.width}px → {new_columns}컬럼 (최대 활용)")
+            
+            # 컬럼 수 변경 알림 (사용자 피드백)
+            if hasattr(self, 'status_label') and new_columns > 5:
+                self.root.after(2000, lambda: self.status_label.config(text=""))  # 2초 후 삭제
+            
+            # 학생 위젯이 있으면 재배치
+            if self.student_widgets and self.monitoring:
+                self.root.after(100, self.reposition_widgets)  # 약간의 지연 후 재배치
     
-    def adjust_all_students(self, minutes):
-        """모든 학생 시간 일괄 조절"""
-        if not self.students:
-            messagebox.showinfo("알림", "현재 모니터링 중인 학생이 없습니다.")
+    def reposition_widgets(self):
+        """현재 위젯들을 새로운 컬럼 수에 맞춰 재배치"""
+        if not self.student_widgets:
             return
+            
+        # 현재 학생들을 active/departed로 분류
+        active_students = []
+        departed_students = []
         
-        count = 0
-        for name in self.students:
-            if not self.students[name].get('checked_out'):
-                self.adjust_student_time(name, minutes)
-                count += 1
+        for name in self.student_widgets:
+            student_info = self.students.get(name, {})
+            if student_info.get('checked_out') or student_info.get('auto_checked_out'):
+                departed_students.append(name)
+            else:
+                end = student_info.get('end_time', datetime.now())
+                remain = (end - datetime.now()).total_seconds()
+                active_students.append((name, remain))
         
-        action = "연장" if minutes > 0 else "단축"
-        messagebox.showinfo("완료", f"{count}명의 학생 수업시간을 {abs(minutes)}분 {action}했습니다.")
+        active_students.sort(key=lambda x: x[1])  # 시간 순 정렬
+        
+        # 기존 위젯들의 grid 위치만 재설정 (위젯 자체는 유지)
+        self.reposition_existing_widgets([name for name, _ in active_students], departed_students)
     
-    def export_to_csv(self):
-        """CSV 파일로 출결 데이터 내보내기"""
-        if not self.students:
-            messagebox.showinfo("알림", "내보낼 데이터가 없습니다.")
-            return
+    def reposition_existing_widgets(self, active_names, departed_names):
+        """기존 위젯들의 위치만 재조정 (성능 최적화)"""
+        row = 0
+        col = 0
+        max_cols = self.current_columns
         
-        today = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"출결기록_{today}.csv"
+        # 모든 위젯을 일시적으로 grid에서 제거
+        for child in self.student_frame.winfo_children():
+            child.grid_forget()
         
-        try:
-            with open(filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(['이름', '등원시간', '하원시간', '수업시간(분)', '상태'])
+        # 1단계: 수업중인 학생들 재배치
+        for name in active_names:
+            if name in self.student_widgets:
+                widget = self.student_widgets[name]['shadow_frame']
+                widget.grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
                 
-                for name, data in self.students.items():
-                    check_in = data['actual_check_in_time'].strftime('%H:%M')
-                    check_out = ""
-                    if data.get('actual_check_out_time'):
-                        check_out = data['actual_check_out_time'].strftime('%H:%M')
-                    
-                    class_minutes = data.get('class_minutes', 90)
-                    status = "하원" if data.get('checked_out') else "수업중"
-                    
-                    writer.writerow([name, check_in, check_out, class_minutes, status])
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
+        
+        # 2단계: 구분선 (하원한 학생이 있을 경우)
+        if departed_names:
+            if col != 0:  # 현재 줄이 완성되지 않았으면 다음 줄로
+                row += 1
+                col = 0
             
-            messagebox.showinfo("완료", f"CSV 파일이 저장되었습니다.\n파일명: {filename}")
-            
-        except Exception as e:
-            messagebox.showerror("오류", f"CSV 파일 저장 실패:\n{str(e)}")
+            # 구분선 새로 생성
+            separator = tk.Label(
+                self.student_frame,
+                text="━━━━━━━━━━ 🚪 하원한 학생들 ━━━━━━━━━━",
+                bg=self.bg_color,
+                fg='#9E9E9E',
+                font=('맑은 고딕', 12, 'bold')
+            )
+            separator.grid(row=row, column=0, columnspan=max_cols, sticky='ew', pady=15)
+            row += 1
+            col = 0
+        
+        # 3단계: 하원한 학생들 재배치
+        for name in departed_names:
+            if name in self.student_widgets:
+                widget = self.student_widgets[name]['shadow_frame']
+                widget.grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
+                
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
+        
+        # 캔버스 스크롤 영역 업데이트
+        self.student_frame.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    
+    # 전체 학생 시간 조절 기능 제거됨
+    
+    # CSV 내보내기 기능 제거됨
     
     def check_browser_status(self):
         """브라우저 상태 주기적 체크"""
@@ -334,7 +527,7 @@ class FinalAttendanceGUI:
                 self.browser_alive = True
                 self.connection_errors = 0
                 self.connection_label.config(
-                    text="🟢 브라우저 연결됨",
+                    text="🟢 연결됨",
                     fg='#4CAF50'
                 )
                     
@@ -342,7 +535,7 @@ class FinalAttendanceGUI:
                 self.browser_alive = False
                 self.connection_errors += 1
                 self.connection_label.config(
-                    text=f"🔴 브라우저 연결 끊김 (오류: {self.connection_errors})",
+                    text=f"🔴 연결끊김({self.connection_errors})",
                     fg='#F44336'
                 )
                 
@@ -352,7 +545,7 @@ class FinalAttendanceGUI:
         else:
             self.browser_alive = False
             self.connection_label.config(
-                text="🔴 브라우저 연결 안됨",
+                text="🔴 연결끊김",
                 fg='#F44336'
             )
         
@@ -365,7 +558,7 @@ class FinalAttendanceGUI:
     def handle_browser_crash(self):
         """브라우저 크래시 처리"""
         self.monitoring = False
-        self.status_label.config(text="⚠️ 브라우저 연결이 끊어졌습니다. 재시작이 필요합니다.")
+        self.status_label.config(text="⚠️ 연결끊김. 재시작 필요")
         
         # 버튼 상태 변경
         self.start_btn.config(state='disabled')
@@ -387,7 +580,7 @@ class FinalAttendanceGUI:
         self.stop_btn.config(state='normal')
         self.status_label.config(text="브라우저 시작 중...")
         self.connection_errors = 0
-        self.session_start_time = datetime.now()
+        # 세션 시간 기록 제거됨
         
         thread = threading.Thread(target=self.run_browser, daemon=True)
         thread.start()
@@ -429,7 +622,10 @@ class FinalAttendanceGUI:
         
         self.browser_alive = False
         self.connection_errors = 0
-        self.session_start_time = None
+        # 세션 시간 초기화 제거됨
+        
+        # 버튼 프레임 다시 보이기
+        self.button_frame.pack(pady=15)
         
         self.start_btn.config(state='normal')
         self.restart_btn.config(state='disabled')
@@ -440,7 +636,7 @@ class FinalAttendanceGUI:
         
         # 학생 위젯들 제거
         for widget_info in self.student_widgets.values():
-            widget_info['frame'].destroy()
+            widget_info['shadow_frame'].destroy()
         self.student_widgets = {}
         self.students = {}
         
@@ -456,14 +652,44 @@ class FinalAttendanceGUI:
             
             self.root.after(0, lambda: self.status_label.config(text="🌐 브라우저에서 로그인 후 '로그인 완료' 버튼을 눌러주세요"))
             self.root.after(0, lambda: self.manual_login_btn.config(state='normal'))
+            self.root.after(0, self.start_login_button_blink)  # 깜빡임 시작
                 
         except Exception as e:
             self.root.after(0, lambda: self.status_label.config(text=f"❌ 브라우저 시작 실패: {str(e)}"))
             self.root.after(0, lambda: self.start_btn.config(state='normal'))
             self.root.after(0, lambda: self.stop_btn.config(state='disabled'))
     
+    def start_login_button_blink(self):
+        """로그인 완료 버튼 깜빡임 시작"""
+        self.login_blinking = True
+        self.blink_login_button()
+    
+    def stop_login_button_blink(self):
+        """로그인 완료 버튼 깜빡임 중지"""
+        self.login_blinking = False
+        self.manual_login_btn.config(bg=self.original_login_bg)
+    
+    def blink_login_button(self):
+        """로그인 완료 버튼 깜빡임 효과"""
+        if not self.login_blinking:
+            return
+            
+        if self.login_blink_state:
+            # 밝은 색으로 변경 (강조)
+            self.manual_login_btn.config(bg='#00d26a')  # Discord Green
+        else:
+            # 원래 색으로 변경
+            self.manual_login_btn.config(bg=self.original_login_bg)
+        
+        self.login_blink_state = not self.login_blink_state
+        
+        # 500ms마다 깜빡임 반복
+        if self.login_blinking:
+            self.root.after(500, self.blink_login_button)
+    
     def confirm_manual_login(self):
         """수동 로그인 완료 확인"""
+        self.stop_login_button_blink()  # 깜빡임 중지
         self.manual_login_btn.config(state='disabled')
         self.start_monitoring_after_login()
     
@@ -477,12 +703,23 @@ class FinalAttendanceGUI:
         """모니터링 루프 시작"""
         self.monitoring = True
         self.logged_in = True
-        self.root.after(0, lambda: self.status_label.config(text="✅ 모니터링 중... (10초 간격)"))
+        
+        # 브라우저 창 최소화
+        try:
+            self.driver.minimize_window()
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 브라우저 창 최소화 완료")
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 브라우저 창 최소화 실패: {e}")
+        
+        # 버튼 프레임 숨기기 (공간 확보)
+        self.root.after(0, lambda: self.button_frame.pack_forget())
+        
+        self.root.after(0, lambda: self.status_label.config(text=""))
         
         self.monitor_thread()
     
     def monitor_thread(self):
-        """모니터링 스레드 - 오류 처리 강화"""
+        """모니터링 스레드 - 10초마다 새로고침 + 데이터 확인"""
         while self.monitoring:
             try:
                 # 브라우저 상태 확인
@@ -490,6 +727,15 @@ class FinalAttendanceGUI:
                     print(f"[{datetime.now().strftime('%H:%M:%S')}] 브라우저 연결 끊김 감지")
                     break
                 
+                # 매번 데이터 확인 전에 새로고침 (키오스크 출결 반영 보장)
+                try:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 페이지 새로고침 (키오스크 출결 감지용)")
+                    self.driver.refresh()
+                    time.sleep(1.5)  # 새로고침 후 로딩 대기 (단축)
+                except Exception as e:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 새로고침 실패: {e}")
+                
+                # 새로고침 직후 최신 데이터 확인
                 students = self.get_students()
                 self.current_data = students
                 
@@ -549,7 +795,8 @@ class FinalAttendanceGUI:
                     hour = 0
                 
                 today = datetime.now().date()
-                return datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
+                parsed_time = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
+                return parsed_time
         except:
             pass
         
@@ -631,80 +878,114 @@ class FinalAttendanceGUI:
         return result
     
     def create_student_widget(self, name):
-        """학생 위젯 생성"""
-        frame = tk.Frame(
+        """학생 카드 위젯 생성 - 정사각형 카드 스타일"""
+        # 모던 그림자 효과를 위한 외부 프레임
+        shadow_frame = tk.Frame(
             self.student_frame,
-            bg='#1b5e20',
-            relief=tk.RAISED,
-            borderwidth=2,
-            height=70
+            bg='#0f0f0f',  # 진한 그레이 그림자
+            width=226,
+            height=206
         )
+        shadow_frame.pack_propagate(False)
         
-        # 이름
+        # 카드 메인 프레임 (모던 Discord 스타일)
+        card_frame = tk.Frame(
+            shadow_frame,
+            bg='#2d2d30',  # Discord 카드 색상
+            relief=tk.FLAT,  # 평면으로 변경
+            borderwidth=1,
+            width=220,
+            height=200,
+            highlightbackground='#40444b',  # 부드러운 테두리
+            highlightthickness=1
+        )
+        card_frame.pack_propagate(False)  # 크기 고정
+        card_frame.place(x=3, y=3)  # 그림자 효과 위치
+        
+        # 학생 이름 (상단 중앙)
         name_label = tk.Label(
-            frame,
-            text=name[:15],
-            font=('맑은 고딕', 12, 'bold'),
-            bg='#1b5e20',
-            fg=self.fg_color,
-            width=18
-        )
-        name_label.pack(side='left', padx=8, pady=8)
-        
-        # 출석 시간
-        time_label = tk.Label(
-            frame,
-            text="",
-            font=('맑은 고딕', 11),
-            bg='#1b5e20',
-            fg='lightgreen',
-            width=15
-        )
-        time_label.pack(side='left', padx=5)
-        
-        # 남은 시간
-        remain_label = tk.Label(
-            frame,
-            text="",
+            card_frame,
+            text=name[:8],  # 이름 길이 제한
             font=('맑은 고딕', 16, 'bold'),
-            bg='#1b5e20',
-            fg='lightgreen',
-            width=25
+            bg='#2d2d30',
+            fg='#ffffff',  # 순백색으로 더 선명하게
+            anchor='center'
         )
-        remain_label.pack(side='left', padx=8)
+        name_label.pack(pady=(15, 5), fill='x')
         
-        # 시간 조절 버튼
-        btn_frame = tk.Frame(frame, bg='#1b5e20')
-        btn_frame.pack(side='right', padx=8)
+        # 남은 시간 (중간, 크게 표시)
+        remain_label = tk.Label(
+            card_frame,
+            text="로딩중...",
+            font=('맑은 고딕', 18, 'bold'),
+            bg='#2d2d30',
+            fg='#00d26a',  # 기본값으로 Fresh Green
+            anchor='center',
+            wraplength=200,
+            justify='center'
+        )
+        remain_label.pack(pady=(0, 5), fill='x')
+        
+        # 등원시간
+        time_label = tk.Label(
+            card_frame,
+            text="등원시간",
+            font=('맑은 고딕', 11),
+            bg='#2d2d30',
+            fg='#72767d',  # Discord 부제목 색상
+            anchor='center'
+        )
+        time_label.pack(pady=(0, 2), fill='x')
+        
+        # 하원 예정 시간
+        checkout_label = tk.Label(
+            card_frame,
+            text="하원예정",
+            font=('맑은 고딕', 11),
+            bg='#2d2d30',
+            fg='#72767d',  # Discord 부제목 색상
+            anchor='center'
+        )
+        checkout_label.pack(pady=(0, 8), fill='x')
+        
+        # 시간 조절 버튼 (최하단)
+        btn_frame = tk.Frame(card_frame, bg='#2d2d30')
+        btn_frame.pack(side='bottom', pady=(0, 10))
         
         minus_btn = tk.Button(
             btn_frame,
-            text="-10분",
-            font=('맑은 고딕', 9, 'bold'),
+            text="- 10분",
+            font=('맑은 고딕', 10, 'bold'),
             bg='#F44336',
             fg='white',
             command=lambda: self.adjust_student_time(name, -10),
             width=6,
-            height=2
+            height=1,
+            relief=tk.RAISED,
+            borderwidth=2
         )
-        minus_btn.pack(side='left', padx=2)
+        minus_btn.pack(side='left', padx=6)
         
         plus_btn = tk.Button(
             btn_frame,
-            text="+10분",
-            font=('맑은 고딕', 9, 'bold'),
+            text="+ 10분",
+            font=('맑은 고딕', 10, 'bold'),
             bg='#2196F3',
             fg='white',
             command=lambda: self.adjust_student_time(name, 10),
             width=6,
-            height=2
+            height=1,
+            relief=tk.RAISED,
+            borderwidth=2
         )
-        plus_btn.pack(side='left', padx=2)
+        plus_btn.pack(side='left', padx=6)
         
         return {
-            'frame': frame,
+            'shadow_frame': shadow_frame,
+            'frame': card_frame,
             'name': name_label,
             'time': time_label,
+            'checkout_time': checkout_label,
             'remain': remain_label,
             'buttons': btn_frame,
             'minus_btn': minus_btn,
@@ -721,27 +1002,36 @@ class FinalAttendanceGUI:
         
         # 출석 시간 표시
         check_in_time = student_info['actual_check_in_time']
-        widget['time'].config(text=f"📅 등원: {check_in_time.strftime('%H:%M')}")
+        widget['time'].config(text=f"등원: {check_in_time.strftime('%H:%M')}")
         
-        # 하원한 경우
+        # 하원 예정 시간 표시 (하원하지 않은 경우)
+        if not student_info.get('checked_out'):
+            end_time = student_info['end_time']
+            widget['checkout_time'].config(text=f"하원예정: {end_time.strftime('%H:%M')}")
+        
+        # 하원한 경우 (최우선 처리)
         if student_info.get('checked_out'):
-            widget['frame'].config(bg='#616161')
-            widget['name'].config(bg='#616161')
-            widget['time'].config(bg='#616161', fg='#BDBDBD')
-            widget['remain'].config(bg='#616161')
-            widget['buttons'].config(bg='#616161')
+            widget['frame'].config(bg='#1e1e1e', highlightbackground='#2d2d30')
+            widget['name'].config(bg='#1e1e1e')
+            widget['time'].config(bg='#1e1e1e', fg='#72767d')
+            widget['checkout_time'].config(bg='#1e1e1e', fg='#72767d')
+            widget['remain'].config(bg='#1e1e1e')
+            widget['buttons'].config(bg='#1e1e1e')
             
             if student_info.get('actual_check_out_time'):
                 check_out = student_info['actual_check_out_time']
                 widget['remain'].config(
-                    text=f"🚪 하원: {check_out.strftime('%H:%M')}",
-                    fg='#BDBDBD'
+                    text=f"하원 완료\n{check_out.strftime('%H:%M')}",
+                    fg='#72767d'
                 )
+                widget['checkout_time'].config(text=f"실제하원: {check_out.strftime('%H:%M')}")
             else:
-                widget['remain'].config(text="🚪 하원 완료", fg='#BDBDBD')
+                widget['remain'].config(text="하원 완료", fg='#BDBDBD')
+                widget['checkout_time'].config(text="하원 완료")
             
             widget['minus_btn'].config(state='disabled')
             widget['plus_btn'].config(state='disabled')
+            return  # 하원한 경우 여기서 종료 (더 이상 처리하지 않음)
         else:
             # 수업 중인 경우
             end = student_info['end_time']
@@ -756,49 +1046,60 @@ class FinalAttendanceGUI:
                 if total_minutes >= 60:
                     hours = total_minutes // 60
                     minutes = total_minutes % 60
-                    if minutes > 0:
-                        time_text = f"⏰ {hours}시간 {minutes}분 남음"
-                    else:
-                        time_text = f"⏰ {hours}시간 남음"
+                    time_text = f"{hours}시간 {minutes}분"
                 else:
-                    time_text = f"⏰ {total_minutes}분 남음"
+                    time_text = f"{total_minutes}분"
                 
-                if total_minutes > 30:
-                    bg_color = '#1b5e20'
-                    fg_color = 'lightgreen'
-                elif total_minutes > 10:
-                    bg_color = '#F57C00'
-                    fg_color = 'white'
-                else:
-                    bg_color = '#E65100'
-                    fg_color = 'yellow'
+                # 시간 기반 부드러운 색상 그라데이션 계산
+                bg_color, fg_color, border_color = get_time_based_colors(total_minutes)
+                checkout_fg = '#b9bbbe'  # 하원예정 시간 색상은 일관되게 유지
                 
-                widget['frame'].config(bg=bg_color)
-                widget['name'].config(bg=bg_color)
-                widget['time'].config(bg=bg_color)
+                widget['frame'].config(bg=bg_color, highlightbackground=border_color)
+                widget['name'].config(bg=bg_color, fg='white')
+                widget['time'].config(bg=bg_color, fg='lightgreen')
+                widget['checkout_time'].config(bg=bg_color, fg=checkout_fg)
                 widget['remain'].config(bg=bg_color, text=time_text, fg=fg_color)
                 widget['buttons'].config(bg=bg_color)
             else:
-                # 시간 초과
+                # 수업시간 종료 - 자동 하원 처리
+                if not student_info.get('auto_checked_out'):
+                    # 자동 하원으로 상태 변경
+                    self.students[name]['checked_out'] = True
+                    self.students[name]['auto_checked_out'] = True  # 자동 하원 표시
+                    self.students[name]['actual_check_out_time'] = end  # 예상 하원 시간으로 설정
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] {name} 자동 하원 처리됨")
+                    # 자동 하원 후 위젯 재정렬 필요 플래그 설정
+                    if not hasattr(self, 'need_reorder'):
+                        self.need_reorder = True
+                
+                # 하원 상태로 표시 (자동 하원)
+                widget['frame'].config(bg='#1e1e1e', highlightbackground='#2d2d30')
+                widget['name'].config(bg='#1e1e1e')
+                widget['time'].config(bg='#1e1e1e', fg='#72767d')
+                widget['checkout_time'].config(bg='#1e1e1e', fg='#72767d')
+                widget['remain'].config(bg='#1e1e1e')
+                widget['buttons'].config(bg='#1e1e1e')
+                
                 expected_time = end.strftime('%H:%M')
-                
-                widget['frame'].config(bg='#b71c1c')
-                widget['name'].config(bg='#b71c1c')
-                widget['time'].config(bg='#b71c1c')
                 widget['remain'].config(
-                    bg='#b71c1c',
-                    text=f"🚨 하원예정: {expected_time}",
-                    fg='white'
+                    text=f"하원 완료\n{expected_time}",
+                    fg='#72767d'
                 )
-                widget['buttons'].config(bg='#b71c1c')
+                widget['checkout_time'].config(text=f"예정하원: {expected_time}")
                 
+                widget['minus_btn'].config(state='disabled')
+                widget['plus_btn'].config(state='disabled')
+                
+                # 알림음은 한 번만 (실제 시간 초과 시점에)
                 if not student_info.get('alerted'):
                     winsound.Beep(1000, 300)
                     self.students[name]['alerted'] = True
     
     def update_time_only(self):
-        """시간 표시만 업데이트"""
-        for name in self.student_widgets:
+        """시간 표시만 업데이트 - 자동 하원도 처리"""
+        auto_checkout_happened = False
+        
+        for name in list(self.student_widgets.keys()):  # list()로 복사본 생성
             if name in self.students:
                 student_info = self.students[name]
                 widget = self.student_widgets[name]
@@ -813,16 +1114,36 @@ class FinalAttendanceGUI:
                         if total_minutes >= 60:
                             hours = total_minutes // 60
                             minutes = total_minutes % 60
-                            if minutes > 0:
-                                time_text = f"⏰ {hours}시간 {minutes}분 남음"
-                            else:
-                                time_text = f"⏰ {hours}시간 남음"
+                            time_text = f"{hours}시간 {minutes}분"
                         else:
-                            time_text = f"⏰ {total_minutes}분 남음"
+                            time_text = f"{total_minutes}분"
+                        
+                        # 시간 변화에 따른 부드러운 색상 업데이트
+                        bg_color, fg_color, border_color = get_time_based_colors(total_minutes)
+                        
+                        # 색상 실시간 업데이트 (부드러운 그라데이션)
+                        widget['frame'].config(bg=bg_color, highlightbackground=border_color)
+                        widget['name'].config(bg=bg_color)
+                        widget['time'].config(bg=bg_color)
+                        widget['checkout_time'].config(bg=bg_color)
+                        widget['remain'].config(bg=bg_color, text=time_text, fg=fg_color)
+                        widget['buttons'].config(bg=bg_color)
                         
                         current_text = widget['remain'].cget('text')
                         if current_text != time_text and "하원" not in current_text:
-                            widget['remain'].config(text=time_text)
+                            widget['remain'].config(text=time_text, fg=fg_color)
+                    else:
+                        # 시간이 지났으면 즉시 자동 하원 처리
+                        if not student_info.get('auto_checked_out'):
+                            self.students[name]['checked_out'] = True
+                            self.students[name]['auto_checked_out'] = True
+                            self.students[name]['actual_check_out_time'] = end
+                            auto_checkout_happened = True
+                            print(f"[{datetime.now().strftime('%H:%M:%S')}] {name} 시간 업데이트 중 자동 하원 처리")
+        
+        # 자동 하원이 발생했으면 전체 UI 재정렬
+        if auto_checkout_happened:
+            self.root.after(100, self.trigger_full_update)
     
     def update_ui(self, current_data):
         """UI 업데이트"""
@@ -834,20 +1155,34 @@ class FinalAttendanceGUI:
         for name in checked_in_students:
             data = checked_in_students[name]
             
+            # 등원 알림 처리 (새로 등원한 학생, 초기 로딩 중 제외)
+            print(f"[DEBUG] {name}: in_students={name not in self.students}, not_notified={name not in self.notified_arrivals}, not_loading={not self.initial_loading}")
+            if name not in self.students and name not in self.notified_arrivals and not self.initial_loading:
+                self.notified_arrivals.add(name)
+                print(f"[알림] {name} 등원")
+                # 별도 스레드에서 알림음 재생 (기존 기능 차단 방지)
+                threading.Thread(target=play_notification_sound, args=("arrival", name), daemon=True).start()
+            
             if name not in self.students:
                 new_students = True
                 actual_check_in = self.parse_time(data.get('check_in_time', ''))
                 if actual_check_in is None:
                     actual_check_in = datetime.now()
                 
+                end_time = actual_check_in + timedelta(minutes=self.default_class_minutes)
+                
+                # 로그인 시점에 이미 수업시간이 지났으면 alerted를 True로 설정 (알림음 방지)
+                already_ended = end_time < datetime.now()
+                
                 self.students[name] = {
                     'checked_in': True,
                     'actual_check_in_time': actual_check_in,
                     'class_minutes': self.default_class_minutes,
-                    'end_time': actual_check_in + timedelta(minutes=self.default_class_minutes),
+                    'end_time': end_time,
                     'checked_out': data.get('checked_out', False),
                     'check_out_time': data.get('check_out_time', ''),
-                    'actual_check_out_time': None
+                    'actual_check_out_time': None,
+                    'alerted': already_ended  # 이미 끝났으면 알림 안함
                 }
             
             # 하원 정보 업데이트
@@ -855,6 +1190,14 @@ class FinalAttendanceGUI:
                 self.students[name]['checked_out'] = True
                 self.students[name]['check_out_time'] = data.get('check_out_time', '')
                 self.students[name]['actual_check_out_time'] = self.parse_time(data.get('check_out_time', ''))
+                
+                # 하원 알림 처리 (실제 하원한 학생, 중복 방지)
+                print(f"[DEBUG] {name} 하원체크: not_notified={name not in self.notified_departures}")
+                if name not in self.notified_departures:
+                    self.notified_departures.add(name)
+                    print(f"[알림] {name} 하원")
+                    # 별도 스레드에서 알림음 재생
+                    threading.Thread(target=play_notification_sound, args=("departure", name), daemon=True).start()
         
         # 위젯 순서 결정
         active_students = []
@@ -862,7 +1205,8 @@ class FinalAttendanceGUI:
         
         for name in checked_in_students:
             student_info = self.students.get(name, {})
-            if student_info.get('checked_out'):
+            # 실제 하원 또는 자동 하원 처리된 학생들
+            if student_info.get('checked_out') or student_info.get('auto_checked_out'):
                 departed_students.append(name)
             else:
                 end = student_info.get('end_time', datetime.now())
@@ -875,44 +1219,175 @@ class FinalAttendanceGUI:
         # 위젯 재배치가 필요한 경우
         current_order = list(self.student_widgets.keys())
         if new_students or ordered_names != current_order:
-            # 기존 위젯 제거
-            for widget_info in self.student_widgets.values():
-                widget_info['frame'].destroy()
+            # 기존 위젯과 구분선 모두 제거
+            for child in self.student_frame.winfo_children():
+                child.destroy()
             self.student_widgets = {}
             self.last_widget_update = {}
             
-            # 위젯 재생성
+            # 위젯 재생성 - 반응형 카드 격자 형태로 배치
             row = 0
-            separator_row = len(active_students)
+            col = 0
+            max_cols = self.current_columns  # 현재 설정된 컬럼 수 사용
             
-            for name in ordered_names:
+            # 1단계: 수업중인 학생들을 남은 시간 적은 순으로 좌→우 배치
+            active_names = [name for name, _ in active_students]  # 이미 시간순 정렬됨
+            for name in active_names:
                 widget = self.create_student_widget(name)
-                
-                if row == separator_row and departed_students:
-                    separator = tk.Label(
-                        self.student_frame, 
-                        text="━━━━━━━━━━ 🚪 하원한 학생들 ━━━━━━━━━━", 
-                        bg=self.bg_color, 
-                        fg='#9E9E9E',
-                        font=('맑은 고딕', 10)
-                    )
-                    separator.grid(row=row, column=0, sticky='ew', pady=10)
-                    row += 1
-                
-                widget['frame'].grid(row=row, column=0, padx=5, pady=4, sticky='ew')
+                widget['shadow_frame'].grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
                 self.student_widgets[name] = widget
+                
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
+            
+            # 2단계: 구분선 (하원한 학생이 있을 경우만)
+            if departed_students:
+                if col != 0:  # 현재 줄이 완성되지 않았으면 다음 줄로
+                    row += 1
+                    col = 0
+                    
+                separator = tk.Label(
+                    self.student_frame, 
+                    text="━━━━━━━━━━ 🚪 하원한 학생들 ━━━━━━━━━━", 
+                    bg=self.bg_color, 
+                    fg='#72767d',  # Discord 부제목 색상
+                    font=('맑은 고딕', 12, 'bold')
+                )
+                separator.grid(row=row, column=0, columnspan=max_cols, sticky='ew', pady=15)
                 row += 1
+                col = 0
+            
+            # 3단계: 하원한 학생들 배치
+            for name in departed_students:
+                widget = self.create_student_widget(name)
+                widget['shadow_frame'].grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
+                self.student_widgets[name] = widget
+                
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
         
-        # 각 학생 위젯 업데이트
+        # 각 학생 위젯 업데이트 (자동 하원 처리 포함)
         for name in self.student_widgets:
             self.update_single_student(name)
         
-        # 통계 업데이트
-        active_count = len(active_students)
-        departed_count = len(departed_students)
+        # 자동 하원 처리 후 순서가 바뀌었을 수 있으므로 다시 체크
+        self.root.after(100, self.reorder_if_needed)
+        
+        # 실제 상태 기준으로 통계 재계산
+        self.update_statistics()
+        
+        # 초기 로딩 완료 (첫 번째 UI 업데이트 후)
+        if self.initial_loading:
+            # 초기 로딩 시 이미 존재하는 모든 학생을 알림 제외 목록에 추가
+            for name in checked_in_students:
+                self.notified_arrivals.add(name)  # 등원 알림 제외
+                data = checked_in_students[name]
+                if data.get('checked_out', False):
+                    self.notified_departures.add(name)  # 하원 알림 제외 (이미 하원한 경우)
+                    # already_departed는 초기 로딩시에는 추가하지 않음 (실시간 하원 감지를 위해)
+            
+            self.initial_loading = False
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 초기 로딩 완료 - 기존 학생 {len(checked_in_students)}명 알림 제외, 이후부터 실시간 알림 활성화")
+    
+    def update_statistics(self):
+        """실제 학생 상태를 기반으로 통계 업데이트"""
+        active_count = 0
+        departed_count = 0
+        
+        for name, student_info in self.students.items():
+            # 실제 하원 또는 자동 하원 처리된 학생들
+            if student_info.get('checked_out') or student_info.get('auto_checked_out'):
+                departed_count += 1
+            else:
+                active_count += 1
+        
         self.count_label.config(text=f"👥 수업중: {active_count}명")
         self.departed_label.config(text=f"🚪 하원: {departed_count}명")
+    
+    def reorder_if_needed(self):
+        """자동 하원 처리 후 순서 재정렬이 필요한지 확인"""
+        current_active = []
+        current_departed = []
         
+        for name in self.student_widgets:
+            student_info = self.students.get(name, {})
+            if student_info.get('checked_out') or student_info.get('auto_checked_out'):
+                current_departed.append(name)
+            else:
+                end = student_info.get('end_time', datetime.now())
+                remain = (end - datetime.now()).total_seconds()
+                current_active.append((name, remain))
+        
+        current_active.sort(key=lambda x: x[1])
+        expected_order = [name for name, _ in current_active] + current_departed
+        actual_order = list(self.student_widgets.keys())
+        
+        # 순서가 다르면 위젯 재배치
+        if expected_order != actual_order:
+            self.rebuild_widgets(current_active, current_departed)
+    
+    def rebuild_widgets(self, active_students, departed_students):
+        """위젯 순서 재구축 - 반응형 카드 격자 형태"""
+        # 기존 위젯과 구분선 모두 제거
+        for child in self.student_frame.winfo_children():
+            child.destroy()
+        self.student_widgets = {}
+        
+        row = 0
+        col = 0
+        max_cols = self.current_columns  # 현재 설정된 컬럼 수 사용
+        
+        # 수업중인 학생들을 시간순으로 배치
+        for name, _ in active_students:
+            widget = self.create_student_widget(name)
+            widget['shadow_frame'].grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
+            self.student_widgets[name] = widget
+            self.update_single_student(name)  # 즉시 상태 적용
+            
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+        
+        # 구분선
+        if departed_students:
+            if col != 0:  # 현재 줄이 완성되지 않았으면 다음 줄로
+                row += 1
+                col = 0
+                
+            separator = tk.Label(
+                self.student_frame, 
+                text="━━━━━━━━━━ 🚪 하원한 학생들 ━━━━━━━━━━", 
+                bg=self.bg_color, 
+                fg='#9E9E9E',
+                font=('맑은 고딕', 12, 'bold')
+            )
+            separator.grid(row=row, column=0, columnspan=max_cols, sticky='ew', pady=15)
+            row += 1
+            col = 0
+        
+        # 하원한 학생들 배치
+        for name in departed_students:
+            widget = self.create_student_widget(name)
+            widget['shadow_frame'].grid(row=row, column=col, padx=10, pady=8, sticky='nsew')
+            self.student_widgets[name] = widget
+            self.update_single_student(name)  # 즉시 상태 적용
+            
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+        
+    def trigger_full_update(self):
+        """전체 UI 업데이트 트리거 (자동 하원 후 재정렬용)"""
+        if self.monitoring:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 자동 하원으로 인한 전체 UI 재구성")
+            self.update_ui(self.current_data)
+    
     def run(self):
         """실행"""
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
