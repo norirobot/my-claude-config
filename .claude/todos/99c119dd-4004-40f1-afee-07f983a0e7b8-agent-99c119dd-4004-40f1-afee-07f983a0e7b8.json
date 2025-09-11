@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "content": "원격 저장소의 최신 변경사항 확인 및 동기화",
+    "status": "in_progress",
+    "activeForm": "원격 저장소의 최신 변경사항을 확인하고 동기화하는 중"
+  },
+  {
+    "content": "새로운 프로젝트 파일들 다운로드 (자격증마스터 등)",
+    "status": "pending",
+    "activeForm": "새로운 프로젝트 파일들을 다운로드하는 중"
+  },
+  {
+    "content": "PROJECT_SUMMARY.md 파일들 생성 확인",
+    "status": "pending",
+    "activeForm": "PROJECT_SUMMARY.md 파일들 생성을 확인하는 중"
+  },
+  {
+    "content": "새로운 자동화 매크로 시스템 활성화 확인",
+    "status": "pending",
+    "activeForm": "새로운 자동화 매크로 시스템 활성화를 확인하는 중"
+  },
+  {
+    "content": "환경 동기화 완료 및 테스트",
+    "status": "pending",
+    "activeForm": "환경 동기화를 완료하고 테스트하는 중"
+  }
+]

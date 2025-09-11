@@ -23,7 +23,7 @@
     "custom-commands": 29,
     "image-paste": 33
   },
-  "promptQueueUseCount": 76,
+  "promptQueueUseCount": 77,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -33,6 +33,14 @@
     "C:\\Users\\sintt": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "확인하고 무슨 업데이트가 있었는지 일단 확인부터해.\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "학원에서 지침을 새로 업데이트했는데 확인가능해?",
+          "pastedContents": {}
+        },
         {
           "display": "  - 원격 리포지터리: git@github.com:norirobot/my-claude-config.git\n  - 최신 커밋 확인: 91400be 커밋이 마스터 브랜치에 정상 반영됨\n  - 다른 PC에서 접근 가능: 집/학원 어디서든 git pull로 최신 버전 사용 가능\n\n  이제 모든 작업 내용이 안전하게 GitHub에 백업되었습니다! 이게 학원에서 마지막에 클로코드에서 얻은답변이야 확인해봐",
           "pastedContents": {}
@@ -446,14 +454,6 @@
         },
         {
           "display": "사이트연결할수없음.",
-          "pastedContents": {}
-        },
-        {
-          "display": "브라우저 안열렸는데",
-          "pastedContents": {}
-        },
-        {
-          "display": "실행해서 테스트해줘.",
           "pastedContents": {}
         }
       ],

@@ -23,7 +23,7 @@
     "custom-commands": 29,
     "image-paste": 33
   },
-  "promptQueueUseCount": 76,
+  "promptQueueUseCount": 77,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -33,6 +33,14 @@
     "C:\\Users\\sintt": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "여기 컴퓨터에도 학원과 같은 환경으로 클로드코드 가능하게 업데이트 해줘. ",
+          "pastedContents": {}
+        },
+        {
+          "display": "확인하고 무슨 업데이트가 있었는지 일단 확인부터해.\n",
+          "pastedContents": {}
+        },
         {
           "display": "학원에서 지침을 새로 업데이트했는데 확인가능해?",
           "pastedContents": {}
@@ -446,14 +454,6 @@
         },
         {
           "display": "해당 프로젝트를 만들기 위해 내가 처음에 너한테 제안했던 프롬프터 줘.",
-          "pastedContents": {}
-        },
-        {
-          "display": "사이트연결할수없음.",
-          "pastedContents": {}
-        },
-        {
-          "display": "브라우저 안열렸는데",
           "pastedContents": {}
         }
       ],
