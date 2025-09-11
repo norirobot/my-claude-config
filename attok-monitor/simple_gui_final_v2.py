@@ -76,53 +76,78 @@ def get_time_based_colors(total_minutes):
     return color_points[-1][1], color_points[-1][2], color_points[-1][3]
 
 def play_notification_sound(notification_type, student_name=None):
-    """알림음 및 음성 알림 재생 함수"""
+    """최종 완성된 음성 알림 (큰 음량 + 간단명확)"""
     try:
         if notification_type == "arrival":
-            # 등원 알림음 (높은 톤, 짧게 2번)
+            # 등원 알림음
             winsound.Beep(800, 200)
             time.sleep(0.1)
             winsound.Beep(1000, 200)
             
-            # 음성 알림 추가 (이름 → 1초 쉬기 → "등원")
             if student_name:
                 engine = pyttsx3.init()
-                engine.setProperty('rate', 100)  # 더 천천히 (120 → 100)
-                engine.setProperty('volume', 1.0)  # 최대 볼륨 (0.9 → 1.0)
-                engine.say(student_name)  # 이름만 먼저
-                engine.runAndWait()
-                engine.stop()
-                time.sleep(1.5)  # 1.5초 쉬기 (더 긴 간격)
+                engine.setProperty('rate', 100)  # 적당한 속도
+                engine.setProperty('volume', 1.0)  # 볼륨 최대
                 
-                engine = pyttsx3.init()
-                engine.setProperty('rate', 100)  # 더 천천히
-                engine.setProperty('volume', 1.0)  # 최대 볼륨
-                engine.say("등원")  # "등원"만 따로
+                # 한국어 음성 선택
+                voices = engine.getProperty('voices')
+                if voices:
+                    korean_voice = None
+                    for voice in voices:
+                        if 'KO-KR' in voice.id or 'HEAMI' in voice.id:
+                            korean_voice = voice
+                            break
+                    
+                    if korean_voice:
+                        engine.setProperty('voice', korean_voice.id)
+                    else:
+                        engine.setProperty('voice', voices[0].id)
+                
+                full_message = f"{student_name} 등원"
+                print(f"[최종] 큰 음량 음성: '{full_message}'")
+                engine.say(full_message)
                 engine.runAndWait()
-                engine.stop()
+                
+                try:
+                    engine.stop()
+                except:
+                    pass
                 
         elif notification_type == "departure":
-            # 하원 알림음 (낮은 톤, 길게 1번)
+            # 하원 알림음
             winsound.Beep(600, 400)
             
-            # 음성 알림 추가 (이름 → 1.5초 쉬기 → "하원")
             if student_name:
                 engine = pyttsx3.init()
-                engine.setProperty('rate', 100)  # 더 천천히 (120 → 100)
-                engine.setProperty('volume', 1.0)  # 최대 볼륨 (0.9 → 1.0)
-                engine.say(student_name)  # 이름만 먼저
-                engine.runAndWait()
-                engine.stop()
-                time.sleep(1.5)  # 1.5초 쉬기 (더 긴 간격)
+                engine.setProperty('rate', 100)  # 적당한 속도
+                engine.setProperty('volume', 1.0)  # 볼륨 최대
                 
-                engine = pyttsx3.init()
-                engine.setProperty('rate', 100)  # 더 천천히
-                engine.setProperty('volume', 1.0)  # 최대 볼륨
-                engine.say("하원")  # "하원"만 따로
+                # 한국어 음성 선택
+                voices = engine.getProperty('voices')
+                if voices:
+                    korean_voice = None
+                    for voice in voices:
+                        if 'KO-KR' in voice.id or 'HEAMI' in voice.id:
+                            korean_voice = voice
+                            break
+                    
+                    if korean_voice:
+                        engine.setProperty('voice', korean_voice.id)
+                    else:
+                        engine.setProperty('voice', voices[0].id)
+                
+                full_message = f"{student_name} 하원"
+                print(f"[최종] 큰 음량 음성: '{full_message}'")
+                engine.say(full_message)
                 engine.runAndWait()
-                engine.stop()
-    except:
-        pass  # 알림 실패해도 프로그램에 영향 없음
+                
+                try:
+                    engine.stop()
+                except:
+                    pass
+                    
+    except Exception as e:
+        print(f"[오류] 음성 알림 실패: {e}")
 
 class FinalAttendanceGUI:
     def __init__(self):
@@ -1187,17 +1212,22 @@ class FinalAttendanceGUI:
             
             # 하원 정보 업데이트
             if data.get('checked_out') and not self.students[name].get('checked_out'):
+                print(f"[DEBUG] {name} 하원 감지됨! 알림 조건 확인 중...")
                 self.students[name]['checked_out'] = True
                 self.students[name]['check_out_time'] = data.get('check_out_time', '')
                 self.students[name]['actual_check_out_time'] = self.parse_time(data.get('check_out_time', ''))
                 
                 # 하원 알림 처리 (실제 하원한 학생, 중복 방지)
-                print(f"[DEBUG] {name} 하원체크: not_notified={name not in self.notified_departures}")
-                if name not in self.notified_departures:
+                is_not_notified = name not in self.notified_departures
+                print(f"[DEBUG] {name} 하원 알림 조건: is_not_notified={is_not_notified}")
+                
+                if is_not_notified:
                     self.notified_departures.add(name)
-                    print(f"[알림] {name} 하원")
+                    print(f"[알림] {name} 하원 - 음성 알림 시작!")
                     # 별도 스레드에서 알림음 재생
                     threading.Thread(target=play_notification_sound, args=("departure", name), daemon=True).start()
+                else:
+                    print(f"[DEBUG] {name} 하원 알림 중복 - 이미 알림 완료된 학생")
         
         # 위젯 순서 결정
         active_students = []
