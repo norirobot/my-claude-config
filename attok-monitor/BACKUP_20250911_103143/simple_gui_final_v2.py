@@ -17,11 +17,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException, NoSuchWindowException, TimeoutException
-from selenium.webdriver.chrome.options import Options
 import hashlib
-import base64
-import json
-from cryptography.fernet import Fernet
 # import csv  # CSV 기능 제거
 import os
 
@@ -194,11 +190,6 @@ class FinalAttendanceGUI:
         
         # 로그 및 통계 (세션 시간 기능 제거됨)
         
-        # 자동 로그인 설정
-        self.key_file = "login.key"
-        self.config_file = "login_config.dat"
-        self.load_or_create_key()
-        
         self.setup_ui()
         
     def setup_ui(self):
@@ -310,22 +301,6 @@ class FinalAttendanceGUI:
             activebackground='#4752c4'     # 활성화 시 hover 색상
         )
         self.manual_login_btn.pack(side='left', padx=5)
-        
-        # 저장정보 삭제 버튼
-        self.clear_login_btn = tk.Button(
-            top_buttons,
-            text="🗑️ 저장정보 삭제",
-            font=('맑은 고딕', 10),
-            bg='#dc3545',  # 빨간색
-            fg='white',
-            command=self.clear_saved_credentials,
-            width=12,
-            height=1,
-            relief=tk.FLAT,
-            borderwidth=0,
-            activebackground='#c82333'
-        )
-        self.clear_login_btn.pack(side='left', padx=5)
         
         # 두 번째 줄 버튼들
         bottom_buttons = tk.Frame(self.button_frame, bg=self.bg_color)
@@ -700,17 +675,9 @@ class FinalAttendanceGUI:
             self.driver.get("https://attok.co.kr/")
             self.browser_alive = True
             
-            # 저장된 로그인 정보가 있으면 자동 로그인 시도
-            username, password = self.load_saved_credentials()
-            if username and password:
-                self.root.after(0, lambda: self.status_label.config(text="🔐 자동 로그인 시도 중..."))
-                # 별도 스레드에서 자동 로그인 실행
-                threading.Thread(target=self.perform_auto_login, args=(username, password), daemon=True).start()
-            else:
-                # 저장된 정보가 없으면 수동 로그인 모드
-                self.root.after(0, lambda: self.status_label.config(text="🌐 브라우저에서 로그인 후 '로그인 완료' 버튼을 눌러주세요"))
-                self.root.after(0, lambda: self.manual_login_btn.config(state='normal'))
-                self.root.after(0, self.start_login_button_blink)  # 깜빡임 시작
+            self.root.after(0, lambda: self.status_label.config(text="🌐 브라우저에서 로그인 후 '로그인 완료' 버튼을 눌러주세요"))
+            self.root.after(0, lambda: self.manual_login_btn.config(state='normal'))
+            self.root.after(0, self.start_login_button_blink)  # 깜빡임 시작
                 
         except Exception as e:
             self.root.after(0, lambda: self.status_label.config(text=f"❌ 브라우저 시작 실패: {str(e)}"))
@@ -1456,142 +1423,6 @@ class FinalAttendanceGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.root.mainloop()
         
-    def load_or_create_key(self):
-        """암호화 키 생성/로드"""
-        try:
-            if os.path.exists(self.key_file):
-                with open(self.key_file, 'rb') as f:
-                    self.key = f.read()
-            else:
-                self.key = Fernet.generate_key()
-                with open(self.key_file, 'wb') as f:
-                    f.write(self.key)
-            self.cipher = Fernet(self.key)
-        except Exception as e:
-            print(f"암호화 키 오류: {e}")
-            # 기본 키 사용
-            self.key = base64.urlsafe_b64encode(b"attok_login_key_2025".ljust(32, b'\0')[:32])
-            self.cipher = Fernet(self.key)
-    
-    def load_saved_credentials(self):
-        """저장된 아이디/비밀번호 로드"""
-        try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'rb') as f:
-                    encrypted_data = f.read()
-                
-                # 복호화 후 JSON 파싱
-                decrypted_data = self.cipher.decrypt(encrypted_data)
-                data = json.loads(decrypted_data.decode())
-                
-                return data.get("username", ""), data.get("password", "")
-        except Exception as e:
-            print(f"로드 오류: {e}")
-        return "", ""
-    
-    def save_credentials(self, username, password):
-        """아이디/비밀번호 암호화해서 저장"""
-        try:
-            data = {
-                "username": username,
-                "password": password
-            }
-            
-            # JSON을 문자열로 변환 후 암호화
-            json_str = json.dumps(data)
-            encrypted_data = self.cipher.encrypt(json_str.encode())
-            
-            with open(self.config_file, 'wb') as f:
-                f.write(encrypted_data)
-            
-            print("로그인 정보 저장 완료")
-        except Exception as e:
-            print(f"저장 오류: {e}")
-    
-    def perform_auto_login(self, username, password):
-        """자동 로그인 수행"""
-        try:
-            # 로그인 페이지로 이동
-            self.driver.get("https://attok.co.kr/center_login_lite_new.asp")
-            WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.NAME, "user_id"))
-            )
-            
-            # 로그인 정보 입력
-            user_id_field = self.driver.find_element(By.NAME, "user_id")
-            user_id_field.clear()
-            user_id_field.send_keys(username)
-            
-            password_field = self.driver.find_element(By.NAME, "user_pass")
-            password_field.clear()
-            password_field.send_keys(password)
-            
-            # 로그인 버튼 클릭
-            button_selectors = [
-                "//input[@type='button' and @value='로그인']",
-                "//button[text()='로그인']",
-                "//input[@value='로그인']"
-            ]
-            
-            login_button = None
-            for selector in button_selectors:
-                try:
-                    login_button = self.driver.find_element(By.XPATH, selector)
-                    break
-                except:
-                    continue
-            
-            if login_button:
-                self.driver.execute_script("arguments[0].click();", login_button)
-                time.sleep(2)
-                
-                # 로그인 성공 확인
-                current_url = self.driver.current_url
-                if "loginok.asp" in current_url or current_url != "https://attok.co.kr/center_login_lite_new.asp":
-                    # 출결 모니터링 페이지로 직접 이동 (메인 페이지가 아닌 실제 출결 페이지)
-                    print(f"로그인 성공: {current_url}")
-                    # 로그인 성공 후 현재 페이지 유지 또는 출결 페이지로 이동
-                    if "loginok.asp" in current_url:
-                        # loginok 페이지에서는 메인으로 이동
-                        self.driver.get("https://attok.co.kr/")
-                        time.sleep(1)
-                    
-                    # 브라우저 최소화
-                    self.driver.minimize_window()
-                    
-                    # 로그인 완료 처리
-                    self.root.after(0, self.confirm_manual_login)
-                else:
-                    # 로그인 실패 - 수동 모드로 전환
-                    self.root.after(0, lambda: self.status_label.config(text="❌ 자동 로그인 실패 - 수동 로그인 모드로 전환"))
-                    self.root.after(0, lambda: self.manual_login_btn.config(state='normal'))
-                    self.root.after(0, self.start_login_button_blink)
-            else:
-                raise Exception("로그인 버튼을 찾을 수 없습니다")
-                
-        except Exception as e:
-            self.root.after(0, lambda: self.status_label.config(text=f"❌ 자동 로그인 오류: {str(e)} - 수동 모드로 전환"))
-            self.root.after(0, lambda: self.manual_login_btn.config(state='normal'))
-            self.root.after(0, self.start_login_button_blink)
-    
-    def clear_saved_credentials(self):
-        """저장된 로그인 정보 삭제"""
-        try:
-            if os.path.exists(self.config_file):
-                os.remove(self.config_file)
-                print("저장된 로그인 정보 삭제 완료")
-            if os.path.exists(self.key_file):
-                os.remove(self.key_file)
-                print("암호화 키 삭제 완료")
-            
-            # 새로운 키 생성
-            self.load_or_create_key()
-            
-            messagebox.showinfo("완료", "저장된 로그인 정보가 삭제되었습니다.\n다음 로그인부터 수동으로 입력해야 합니다.")
-            
-        except Exception as e:
-            messagebox.showerror("오류", f"삭제 중 오류가 발생했습니다: {str(e)}")
-
     def on_close(self):
         """종료"""
         self.monitoring = False
