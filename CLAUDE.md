@@ -2,90 +2,392 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📌 다음 세션 시작점 - 2025-09-10
-### ⚡ 즉시 확인 사항
+## 🏗️ Codebase Architecture
 
-1. **attok 출결 모니터링** ⭐ 작업 중
-   ```bash
-   cd attok-monitor
-   python simple_gui_final.py  # 현재 버전 실행
-   ```
-   - ⚠️ **미해결**: 깜빡임 문제, 로그인 개선 필요
-   - ✅ 완료: 개별 시간 조절, 실시간 정렬, 하원 표시
-   - 자세한 내용: `attok-monitor/SESSION_2025_09_09.md` 참고
+### Project Structure Overview
 
-2. **영어 학습 앱 프로젝트**:
-   - 위치: `my-claude-config/ai-english-tutor/`
-   ```bash
-   # Frontend (포트 3001)
-   cd my-claude-config/ai-english-tutor/frontend && npm run dev
-   
-   # Backend (포트 3003)  
-   cd my-claude-config/ai-english-tutor/backend && PORT=3003 npm run dev
-   ```
+This is a multi-project repository containing:
 
-3. **비주얼 노벨 모드**:
-   - URL: http://localhost:3001/visual-story
-   - 로컬 애셋 시스템 구현 완료
+#### 🎓 **Main Application: AI English Learning Tutor**
+**Location**: `./ai-english-tutor/`
 
-### 🎮 2025-01-09 작업 내용
-1. **Visual Novel Story Mode 구현**
-   - 전체 화면 배경 + 캐릭터 시스템
-   - 하단 대화창 UI (35% 화면)
-   - 감정 표현 시스템 (happy, sad, surprised 등)
-   - 관계도 레벨 시스템
+The primary application is an AI-powered English learning platform with tutor matching:
 
-2. **캐릭터 컴포넌트 변천사**
-   - GameCharacter → AnimeCharacter → SimpleCharacter → ProfessionalCharacter → RealisticCharacter → VisualNovelCharacter → **LocalAssetCharacter (최종)**
-   - 로컬 이미지 애셋 사용 시스템 구축
+```
+ai-english-tutor/
+├── backend/               # Express.js API server
+│   ├── src/
+│   │   ├── server.js     # Main server entry point
+│   │   ├── routes/       # API routes (story, tutors, sessions)
+│   │   ├── services/     # Business logic (OpenAI integration)
+│   │   └── models/       # Database models
+│   └── package.json      # Backend dependencies & scripts
+└── frontend/             # React + TypeScript web app  
+    ├── src/
+    │   ├── components/   # Reusable UI components
+    │   ├── pages/        # Page components (Dashboard, Chat, etc.)
+    │   ├── services/     # API integration
+    │   └── types/        # TypeScript type definitions
+    └── package.json      # Frontend dependencies & scripts
+```
 
-3. **폴더 구조 생성**:
-   ```
-   frontend/public/assets/
-   ├── characters/
-   │   ├── jennifer/
-   │   ├── alex/
-   │   └── sophia/
-   ├── backgrounds/
-   └── ui/
-   ```
+**Tech Stack**:
+- **Frontend**: React 18 + TypeScript + Material-UI + Vite
+- **Backend**: Node.js + Express + JavaScript
+- **Database**: SQLite (development)
+- **AI Integration**: OpenAI API for conversational AI
 
-### ⚠️ 발생했던 이슈들
-1. **캐릭터 디자인 문제**:
-   - SVG 직접 그리기 → 너무 유치함
-   - 실제 사람 사진 → 배경과 안 어울림
-   - 이모티콘 스타일 → 게임과 안 맞음
-   - **해결**: 로컬 애셋 시스템으로 실제 비주얼 노벨 이미지 사용
+#### 📊 **Python Analytics Tools**
 
-2. **배경과 캐릭터 미스매치**:
-   - 실사 배경 + 만화 캐릭터 조합 부자연스러움
-   - **해결 필요**: 배경도 애니메이션 스타일로 통일 필요
+Multiple Streamlit-based analysis tools:
 
-### 📝 내일 할 일
-1. **실제 캐릭터 애셋 다운로드**:
-   - itch.io에서 무료 비주얼 노벨 스프라이트 다운로드
-   - 각 캐릭터별 표정 이미지 (normal, happy, sad, surprised)
-   - `/public/assets/characters/` 폴더에 배치
+- **`./puzzle_crypto_analysis/`**: Cryptocurrency technical analysis dashboard
+- **`./exam_generator/`**: AI-powered exam question generator
+- **`./attendance_notifier/`**: Attendance monitoring with Telegram notifications  
+- **`./attok-monitor/`**: Student attendance monitoring system (완성됨)
 
-2. **배경 이미지 교체**:
-   - 현재: Unsplash 실사 이미지
-   - 변경: 애니메이션 스타일 배경 이미지
-   - 또는 AI로 생성 (Bing Image Creator)
+#### 🔧 **Utility Scripts**
 
-3. **백엔드 연동 테스트**:
-   - CharacterAIService.js 작동 확인
-   - OpenAI API 연결 테스트
-   - 대화 데이터 저장 기능
+Root-level Python scripts for automation:
+- **`simple_analysis.py`**: YouTube subtitle analysis automation
+- **`auto_crypto_analysis.py`**: Integrated crypto analysis
+- **`upbit_rsi_monitor.py`**: RSI indicator monitoring
+- **`run_monitor.py`**: System monitoring orchestrator
 
-4. **추가 기능**:
-   - 세이브/로드 시스템
-   - 사운드 효과
-   - 배경 음악
+### Key Technical Decisions
 
-### 🔗 참고 자료
-- 애셋 가이드: `/frontend/public/assets/ASSET_GUIDE.md`
-- 무료 애셋: https://itch.io (visual novel sprites free 검색)
-- 이미지 생성: https://www.bing.com/images/create
+1. **Multi-port development setup**: Frontend (3002), Backend (3001) for clear separation
+2. **TypeScript adoption**: Frontend uses strict TypeScript, backend uses JavaScript
+3. **Material-UI theming**: Consistent blue-themed UI across components
+4. **Clean Architecture**: Backend follows service-repository pattern
+5. **Python ecosystem**: Streamlit for rapid dashboard development
+
+## 🚀 Development Commands
+
+### AI English Tutor Application
+
+#### Frontend Development
+```bash
+cd ai-english-tutor/frontend
+npm run dev        # Start Vite development server (Port 3002)
+npm run build      # Build for production
+npm run lint       # ESLint code quality checks
+npm run preview    # Preview production build
+```
+
+#### Backend Development  
+```bash
+cd ai-english-tutor/backend
+npm run dev        # Start development server with nodemon (Port 3001)
+npm start          # Start production server
+npm test           # Run Jest test suite
+npm run test:watch # Run tests in watch mode
+npm run test:coverage # Generate test coverage report
+npm run lint       # ESLint code analysis
+npm run lint:fix   # Auto-fix linting issues
+```
+
+#### Full-Stack Development
+```bash
+# Terminal 1 - Backend
+cd ai-english-tutor/backend && npm run dev
+
+# Terminal 2 - Frontend  
+cd ai-english-tutor/frontend && npm run dev
+
+# Access at: http://localhost:3002 (frontend) + http://localhost:3001/api (backend)
+```
+
+### Python Analytics Tools
+
+#### Crypto Analysis Dashboard
+```bash
+cd puzzle_crypto_analysis
+streamlit run app_simple.py  # Main analysis dashboard
+python main.py              # CLI analysis mode
+python test_basic.py         # Basic functionality tests
+```
+
+#### Exam Generator
+```bash
+cd exam_generator
+streamlit run app_simple.py  # Recommended simple version
+streamlit run app.py         # Full featured version
+python test_generator.py     # CLI testing
+```
+
+#### Attendance Systems
+```bash
+# ATTOK Monitor (완성된 시스템)
+cd attok-monitor
+python simple_gui_final_v2.py  # Main stable version
+
+# Attendance Notifier
+cd attendance_notifier  
+python run.py               # Production notification system
+python test_app.py          # Test mode with DB verification
+```
+
+#### Root-Level Utilities
+```bash
+# YouTube Analysis
+python simple_analysis.py          # Subtitle download → analysis → organization
+
+# Crypto Monitoring
+python auto_crypto_analysis.py     # Automated crypto dashboard
+python upbit_rsi_monitor.py        # Upbit RSI monitoring + alerts
+python run_monitor.py              # Integrated monitoring system
+
+# Telegram Utilities
+python chat_id_finder.py           # Find Telegram chat IDs
+```
+
+### Global Python Environment
+
+This repository uses a comprehensive Python environment with 173+ packages for AI/ML, data analysis, and web applications:
+
+```bash
+# Install all Python dependencies
+pip install -r requirements.txt
+
+# Key packages included:
+# - streamlit: Web app framework
+# - openai: AI/ML integration
+# - pandas, numpy: Data analysis  
+# - selenium: Web automation
+# - python-telegram-bot: Bot integration
+# - transformers, torch: Deep learning
+```
+
+## 🔍 Code Patterns & Architecture
+
+### Frontend Patterns (React + TypeScript)
+
+**Component Structure**:
+```typescript
+// Consistent Material-UI component pattern
+import { Box, Typography, Button } from '@mui/material';
+import { styled } from '@mui/material/styles';
+
+// Styled components for custom theming
+const StyledContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+}));
+```
+
+**Service Layer**:
+```typescript
+// API integration pattern
+export const apiService = {
+  async fetchData<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    return response.json();
+  }
+};
+```
+
+### Backend Patterns (Express + JavaScript)
+
+**Route Structure**:
+```javascript
+// Clean route organization
+const express = require('express');
+const router = express.Router();
+
+// Service injection pattern
+const storyService = require('../services/storyService');
+
+router.get('/generate', async (req, res) => {
+  try {
+    const result = await storyService.generateStory(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+**Service Layer**:
+```javascript
+// Business logic separation
+class StoryService {
+  async generateStory(params) {
+    // OpenAI integration logic
+    // Data processing logic
+    // Return structured response
+  }
+}
+```
+
+### Python Streamlit Patterns
+
+**Dashboard Structure**:
+```python
+import streamlit as st
+import pandas as pd
+
+# Consistent page configuration
+st.set_page_config(page_title="Analytics Dashboard", layout="wide")
+
+# Sidebar navigation pattern
+with st.sidebar:
+    selected_option = st.selectbox("Analysis Type", options)
+
+# Main content organization
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Key Metric", value, delta)
+```
+
+## 🛠️ Testing & Quality Assurance
+
+### Frontend Testing
+- **ESLint**: Code quality and style enforcement
+- **TypeScript**: Compile-time type checking
+- **Vite**: Fast development builds
+
+### Backend Testing  
+- **Jest**: Unit and integration testing framework
+- **Supertest**: HTTP assertion testing
+- **ESLint**: JavaScript code analysis
+- **Nodemon**: Automatic development restarts
+
+### Python Quality
+- **Streamlit**: Built-in error handling and debugging
+- **Pytest**: Unit testing (when applicable)
+- **Type hints**: Gradual typing adoption
+
+## 🔧 Environment Configuration
+
+### Required Environment Variables
+
+**AI English Tutor**:
+```bash
+# Backend (.env)
+PORT=3001
+OPENAI_API_KEY=your_openai_key_here
+DATABASE_URL=sqlite:./data.db
+```
+
+**Python Analytics**:
+```bash
+# Various .env files for API keys
+TELEGRAM_BOT_TOKEN=your_token_here
+UPBIT_ACCESS_KEY=your_upbit_key
+UPBIT_SECRET_KEY=your_upbit_secret
+```
+
+### Database Setup
+
+**SQLite** (Development):
+```bash
+# No setup required - auto-created on first run
+# Files: ./ai-english-tutor/backend/data.db
+```
+
+## 📦 Deployment & Build
+
+### Production Build Process
+
+**Frontend**:
+```bash
+cd ai-english-tutor/frontend
+npm run build      # Creates ./dist/ folder
+npm run preview    # Test production build locally
+```
+
+**Backend**:
+```bash  
+cd ai-english-tutor/backend
+npm start          # Production mode with node
+```
+
+**Python Apps**:
+```bash
+# Streamlit apps can be deployed to Streamlit Cloud
+# Local production: streamlit run app.py --server.port 8501
+```
+
+### Executable Creation (PyInstaller)
+
+**Windows Executable Generation**:
+```bash
+# Standard executable creation
+pyinstaller --onefile --windowed --name="AppName" main_script.py
+
+# With custom icon
+pyinstaller --onefile --windowed --icon=app_icon.ico --name="AppName" main_script.py
+
+# Multiple utilities pattern (like ATTOK project)
+pyinstaller --onefile --windowed --name="MainApp" main_script.py
+pyinstaller --onefile --windowed --name="PasswordUpdate" update_script.py  
+pyinstaller --onefile --windowed --name="ResetTool" reset_script.py
+```
+
+**Deployment Package Structure**:
+```
+project/
+├── dist/                           # 🚀 Executable files
+│   ├── MainApp.exe                # Primary application
+│   ├── PasswordUpdate.exe         # Management utilities
+│   ├── ResetTool.exe              # System tools
+│   ├── config_files/              # Runtime configuration
+│   └── app_icon.ico               # Custom icons
+├── source_code/                   # 📁 Complete source backup
+├── DEPLOYMENT_GUIDE.md            # 📚 Full deployment documentation
+└── PROJECT_COMPLETION_SUMMARY.md  # 🎯 Project completion record
+```
+
+## 📌 완료된 프로젝트 - 2025-09-11 ✅
+### 🎉 ATTOK 자동 로그인 + 출결 모니터링 시스템 - 프로젝트 완료!
+
+**📁 위치**: `C:\Users\sintt\attok-monitor\`
+**상태**: ✅ **완료된 프로젝트** (실제 운영 가능)
+
+**🚀 최종 실행 파일들**:
+```bash
+cd attok-monitor/dist
+ATTOK_AutoLogin_System.exe     # 메인 프로그램 (완전 자동화)
+ATTOK_Password_Update.exe      # 비밀번호 변경 도구
+ATTOK_Reset_Login.exe          # 로그인 초기화 도구
+```
+
+**✅ 최종 완성된 시스템**:
+1. **완전 자동 로그인 시스템**
+   - AES-256 암호화로 로그인 정보 안전 저장
+   - 자동 로그인 실패 시 수동 모드 자동 전환
+   - 브라우저 자동 최소화로 백그라운드 운영
+
+2. **실시간 출결 모니터링**
+   - 학생 등원/하원 실시간 감지
+   - 13단계 색상 그라데이션으로 시각적 표현
+   - 남은 시간 순 자동 정렬
+
+3. **음성 알림 시스템**
+   - "홍길동 등원", "홍길동 하원" 명확한 음성 알림
+   - Microsoft Heami 음성 엔진 사용
+   - 최대 볼륨으로 놓칠 수 없는 알림
+
+4. **완전한 배포 패키지**
+   - `ATTOK_COMPLETE_PACKAGE/` - 모든 파일 포함
+   - 실행 파일, 소스 코드, 문서 모두 보관
+   - 10년 후에도 완전 재구성 가능
+   - 전용 아이콘 (`ATTOK_icon.ico`) 포함
+
+**📚 완성된 문서들**:
+- `PROJECT_COMPLETION_SUMMARY.md` - 프로젝트 완료 요약
+- `DEPLOYMENT_GUIDE.md` - 완전한 배포 가이드
+- `백업및복구가이드.txt` - 사용자 가이드
+- `아이콘변경방법.txt` - 아이콘 변경 가이드
+
+**🎯 프로젝트 성과**:
+- **완전 자동화 달성** - 원클릭 실행으로 모든 작업 자동화
+- **안정성 확보** - 자동 로그인 실패 시 안전한 수동 모드 전환
+- **사용성 극대화** - 직관적인 UI와 명확한 음성 알림
+- **장기 보관 시스템** - 완전한 백업 및 복구 시스템
+
+**💾 Git 커밋 완료**: f9512cd (모든 변경사항 저장 완료)
 
 ## 🏠 Home PC Setup Completed - 2025-09-02
 - SSH 키 설정 완료
@@ -113,6 +415,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Tool optimization**: Use multiple tools efficiently in single responses
 6. **최상위 AI 모델 강제 사용**: 모든 프로그램 개발 시 반드시 최상위 모델(현재 Claude Sonnet 4) 사용. 사용량 한계 도달시에도 최고 품질 유지 필수
 
+### 🚫 할루시네이션 절대 금지 규칙
+**CRITICAL**: 거짓 정보 생성 절대 금지 - 신뢰성 최우선
+
+1. **사실 정보 기반 원칙**
+   - 모든 프로그램은 실제 존재하는 정보만 사용
+   - 존재하지 않는 라이브러리, API, 기능 사용 금지
+   - 추측이나 가정으로 코드 작성 금지
+
+2. **정보 확인 필수 절차**
+   - package.json 확인 → 라이브러리 존재 여부
+   - 공식 문서 참조 → API 사용법 검증
+   - 기존 코드 확인 → 패턴 일관성 유지
+
+3. **가상 데이터 사용 시 명시**
+   ```javascript
+   // ❌ 잘못된 예
+   const apiKey = "sk-abc123..."; // 실제처럼 보이는 가짜 키
+   
+   // ✅ 올바른 예  
+   const apiKey = "YOUR_API_KEY_HERE"; // (실제 키 필요)
+   const testData = [
+     { id: 1, name: "테스트 사용자" }, // (임의 데이터)
+     { id: 2, name: "가상 사용자" }   // (가상 데이터)
+   ];
+   ```
+
+4. **불확실한 경우 행동 지침**
+   - "확인이 필요합니다" 명시
+   - "공식 문서를 참조하세요" 안내
+   - "(가상)", "(임의)", "(예시)" 레이블 필수 표시
+
+### 🔄 자동 Git 동기화 시스템
+**CRITICAL**: 작업 내용 자동 백업 및 동기화 - 집/학원 어디서든 최신 버전 유지
+
+#### 자동 동기화 트리거:
+1. **"종료"/"끝"/"exit"/"quit"** 명령 시 → 전체 프로젝트 자동 커밋 & 푸시
+2. **CLAUDE.md 수정** 시 → 즉시 자동 커밋 & 푸시
+3. **TROUBLESHOOTING.md 업데이트** 시 → 즉시 자동 커밋 & 푸시
+4. **중요 파일 변경** 시 → 자동 감지 후 커밋 & 푸시
+5. **30분마다** → 작업 중인 경우 자동 체크포인트 생성
+
+#### 자동 실행 스크립트:
+```bash
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass C:\Users\sintt\scripts\auto-git-sync.ps1
+
+# 또는 직접 실행
+git add -A && git commit -m "Auto-sync: $(date '+%Y-%m-%d %H:%M')" && git push origin master
+```
+
+### 📝 CLAUDE.md 지침 자동 추가 시스템
+**트리거 키워드**: "지침추가", "규칙추가", "add instruction", "새로운 규칙", "이것도 기억해"
+
+사용자가 위 키워드 언급 시:
+1. 자동으로 CLAUDE.md의 적절한 섹션에 추가
+2. 즉시 Git 커밋 & 푸시 (다른 PC에서도 즉시 사용 가능)
+3. 추가 완료 확인 메시지 출력
+4. 백업 파일 자동 생성 (CLAUDE.md.backup)
+
 ### 🛑 종료 명령어 시스템
 **트리거**: 사용자가 "종료", "끝", "exit", "quit" 입력 시 자동 실행
 
@@ -127,13 +488,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - CLAUDE.md 오류 패턴 섹션 업데이트
    - error_patterns.json 파일 생성
 
-3. **코드 변경사항 커밋**
+3. **코드 변경사항 자동 커밋 & 푸시**
    ```bash
    git add -A
    git status  # 변경사항 확인
    git commit -m "Session end: [날짜] - [주요 작업 내용]"
-   git push origin master
+   git push origin master  # GitHub에 자동 푸시
+   git log --oneline -5   # 최근 커밋 확인
    ```
+   **중요**: 푸시 실패 시 자동 재시도 (최대 3회)
 
 4. **개발 서버 종료**
    - 실행 중인 모든 백그라운드 프로세스 종료
@@ -147,15 +510,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - 주의사항: [특별히 기억할 점]
    ```
 
-6. **최종 요약 출력**
+6. **최종 요약 출력 & 동기화 확인**
    ```
    ✅ 오늘 세션 완료!
    - 작업 시간: [시작-종료]
    - 완료 항목: X개
    - 해결한 오류: Y개
    - 커밋 완료: [커밋 해시]
+   - GitHub 동기화: ✅ 완료
    
    💤 다음 세션에서 이어서 작업하세요!
+   🔄 다른 PC에서도 최신 버전을 사용할 수 있습니다!
    ```
 
 ### Project Status Tracking
@@ -856,3 +1221,84 @@ Claude:
 1. **PROJECTS.md 자동 업데이트** - 진행률 및 완료 상태 자동 반영
 2. **문서 자동 생성** - README.md, API 문서 자동 생성
 3. **Git 자동 커밋** - 단계별 자동 커밋으로 변경사항 추적
+
+## 📝 자동 문서화 및 컨텍스트 최적화 시스템
+
+### 기능 요약 문서화 시스템
+**목적**: 프로젝트별 핵심 정보를 컴팩트하게 유지하여 컨텍스트 효율성 극대화
+
+#### 자동 FEATURE_SUMMARY.md 생성 규칙
+**트리거**: 프로젝트 완료, 주요 기능 완성, 또는 사용자가 "기능 정리", "feature summary" 요청 시
+
+**자동 생성 템플릿**:
+```markdown
+# [프로젝트명] 기능 요약
+
+## 🎯 핵심 목적
+[한 줄 요약]
+
+## ⚡ 주요 기능 (3-5개)
+- [기능1]: [간단 설명]
+- [기능2]: [간단 설명] 
+- [기능3]: [간단 설명]
+
+## 🚀 주요 명령어
+\`\`\`bash
+[실행 명령어 1-2개]
+\`\`\`
+
+## 🛠️ 기술스택
+[주요 기술 3-4개]
+
+## 📅 최근 업데이트
+[마지막 작업 내용]
+```
+
+#### PROJECT_SUMMARY.md 컨텍스트 최적화
+**위치**: 각 프로젝트 루트 디렉토리
+**최대 길이**: 500 토큰 이하 (컨텍스트 절약)
+**자동 업데이트**: 코드 변경 시마다 자동 갱신
+
+**컨텍스트 최적화 트리거**:
+- "프로젝트 현황", "project status"
+- "뭐 하고 있었지", "what was I working on"  
+- "어디서부터", "where should I start"
+- 세션 시작 시 자동 표시
+
+### 🤖 새로운 자동화 매크로
+
+#### `/quickstart [project-name]` - 프로젝트 빠른 시작
+**자동 실행 순서**:
+1. PROJECT_SUMMARY.md 자동 읽기 및 표시
+2. 최근 3개 커밋 히스토리 확인  
+3. 관련 개발 서버 자동 실행
+4. 다음 할 일 자동 추천
+5. 필요한 파일들 미리 로드
+
+#### `/context-optimize` - 컨텍스트 자동 최적화
+**자동 실행 순서**:
+1. 현재 작업 중인 프로젝트 식별
+2. 핵심 파일들만 요약 생성  
+3. 불필요한 로그, 캐시 파일 숨기기
+4. 토큰 사용량 50% 절약된 컨텍스트 제공
+5. 작업 계속에 필요한 정보만 유지
+
+#### `/feature-doc [feature-name]` - 기능별 문서 자동 생성
+**자동 실행 순서**:
+1. 해당 기능 관련 코드 자동 수집
+2. API, 함수, 컴포넌트 정보 추출
+3. 사용법 예시 자동 생성
+4. FEATURE_SUMMARY.md에 자동 추가
+5. Git 커밋으로 문서 변경사항 저장
+
+### 📊 컨텍스트 효율성 모니터링
+**자동 측정 항목**:
+- 세션당 평균 토큰 사용량
+- 프로젝트별 컨텍스트 크기  
+- 문서 접근 빈도 분석
+- 자동 요약 정확도 피드백
+
+**최적화 목표**:
+- 컨텍스트 크기 40% 감소
+- 정보 검색 속도 60% 향상
+- 프로젝트 전환 시간 50% 단축

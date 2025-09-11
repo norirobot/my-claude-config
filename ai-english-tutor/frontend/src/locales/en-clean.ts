@@ -208,7 +208,7 @@ export const en = {
     resetFilters: 'Reset Filters',
     resultsFound: 'tutors found',
     completedLessons: 'Completed Lessons',
-    responseTime: 'Response Time',
+    responseTimeLabel: 'Response Time',
     perHour: '/hour',
     message: 'Message',
     book: 'Book',

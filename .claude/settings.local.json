@@ -56,7 +56,10 @@
       "Bash(lsof:*)",
       "Bash(handle my-claude-config\\english-learning-tutor-app)",
       "Bash(findstr:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git rev-parse:*)",
+      "Read(//c/Users/**)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": [],

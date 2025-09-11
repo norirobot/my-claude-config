@@ -8,6 +8,11 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  // 테스트 모드: 인증 체크 비활성화
+  // 모든 페이지 바로 접근 가능
+  return <>{children}</>
+  
+  /* 실제 인증 로직 (배포시 사용)
   const { isAuthenticated, loading } = useAuth()
 
   // 로딩 중일 때 스피너 표시
@@ -38,6 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // 인증된 사용자는 자식 컴포넌트 렌더링
   return <>{children}</>
+  */
 }
 
 export default ProtectedRoute
