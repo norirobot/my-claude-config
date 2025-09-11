@@ -34,6 +34,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "종료",
+          "pastedContents": {}
+        },
+        {
           "display": "여기 컴퓨터에도 학원과 같은 환경으로 클로드코드 가능하게 업데이트 해줘. ",
           "pastedContents": {}
         },
@@ -450,10 +454,6 @@
         },
         {
           "display": "지금 하고 있는 프로젝트 완전히삭제 ",
-          "pastedContents": {}
-        },
-        {
-          "display": "해당 프로젝트를 만들기 위해 내가 처음에 너한테 제안했던 프롬프터 줘.",
           "pastedContents": {}
         }
       ],
