@@ -1,0 +1,8 @@
+node_modules/
+database.db
+*.db
+backups/
+dist/
+build/
+.env
+*.log

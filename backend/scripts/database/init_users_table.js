@@ -21,8 +21,8 @@ db.serialize(() => {
   });
 
   // 관리자 계정 생성
-  db.run(`INSERT OR IGNORE INTO users (username, password, name, role) VALUES (?, ?, ?, ?)`,
-    ['admin', 'admin123', '관리자', 'teacher'], 
+  db.run('INSERT OR IGNORE INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+    ['admin', 'admin123', '관리자', 'teacher'],
     function(err) {
       if (err) {
         console.error('관리자 계정 생성 실패:', err.message);
@@ -32,8 +32,8 @@ db.serialize(() => {
     });
 
   // 서현준 계정 생성
-  db.run(`INSERT OR IGNORE INTO users (username, password, name, role) VALUES (?, ?, ?, ?)`,
-    ['student6', '1234', '서현준', 'student'], 
+  db.run('INSERT OR IGNORE INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+    ['student6', '1234', '서현준', 'student'],
     function(err) {
       if (err) {
         console.error('서현준 계정 생성 실패:', err.message);

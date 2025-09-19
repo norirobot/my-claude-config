@@ -17,17 +17,17 @@ const fixes = [
 
 let completed = 0;
 fixes.forEach(fix => {
-  db.run(`UPDATE problems SET expectedOutput = ? WHERE id = ?`, [fix.expectedOutput, fix.id], function(err) {
+  db.run('UPDATE problems SET expectedOutput = ? WHERE id = ?', [fix.expectedOutput, fix.id], function(err) {
     if (err) {
       console.error(`❌ ID ${fix.id} 수정 실패:`, err);
     } else {
       console.log(`✅ ID ${fix.id} "${fix.title}" 출력 예시 수정: "${fix.expectedOutput}"`);
     }
-    
+
     completed++;
     if (completed === fixes.length) {
       // 수정 완료 후 확인
-      db.all(`SELECT id, title, expectedOutput FROM problems WHERE isActive = 1 ORDER BY lesson, id`, [], (err, rows) => {
+      db.all('SELECT id, title, expectedOutput FROM problems WHERE isActive = 1 ORDER BY lesson, id', [], (err, rows) => {
         if (err) {
           console.error('❌ 확인 실패:', err);
         } else {

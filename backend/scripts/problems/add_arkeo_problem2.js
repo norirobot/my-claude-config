@@ -12,19 +12,19 @@ db.run(`
     isActive, inputExample, outputExample
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, ?)
 `, [
-  "AKEO World! 출력하기",
-  "AKEO World!를 출력하는 프로그램을 작성하시오.",
-  "c",
-  "easy", 
-  "기초",
+  'AKEO World! 출력하기',
+  'AKEO World!를 출력하는 프로그램을 작성하시오.',
+  'c',
+  'easy',
+  '기초',
   1,
-  "RONCO World!",
-  "#include <stdio.h>\n\nint main()\n{\n    \n    return 0;\n}",
-  "#include <stdio.h>\n\nint main()\n{\n    printf(\"RONCO World!\");\n    return 0;\n}",
-  "1. #include <stdio.h>를 사용하세요\n2. printf() 함수를 사용하세요\n3. 문자열은 쌍따옴표로 감싸주세요",
+  'RONCO World!',
+  '#include <stdio.h>\n\nint main()\n{\n    \n    return 0;\n}',
+  '#include <stdio.h>\n\nint main()\n{\n    printf("RONCO World!");\n    return 0;\n}',
+  '1. #include <stdio.h>를 사용하세요\n2. printf() 함수를 사용하세요\n3. 문자열은 쌍따옴표로 감싸주세요',
   1,
-  "-",
-  "RONCO World!"
+  '-',
+  'RONCO World!'
 ], function(err) {
   if (err) {
     console.error('❌ 문제 추가 실패:', err);
@@ -38,6 +38,6 @@ db.run(`
     console.log('   - 언어: C');
     console.log('   - 차시: 1');
   }
-  
+
   db.close();
 });

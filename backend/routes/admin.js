@@ -1,16 +1,13 @@
 const express = require('express');
-const User = require('../models/User');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
-
-const user = new User();
 
 // 관리자 권한 확인 미들웨어
 function requireAdmin(req, res, next) {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ 
-      success: false, 
-      message: '관리자 권한이 필요합니다.' 
+    return res.status(403).json({
+      success: false,
+      message: '관리자 권한이 필요합니다.'
     });
   }
   next();
@@ -26,9 +23,9 @@ router.get('/students', authenticateToken, requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Get students error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '학생 목록 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '학생 목록 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -38,7 +35,7 @@ router.delete('/students/:id', authenticateToken, requireAdmin, async (req, res)
   try {
     const studentId = req.params.id;
     const deleted = await user.deleteStudent(studentId);
-    
+
     if (deleted) {
       res.json({
         success: true,
@@ -52,9 +49,9 @@ router.delete('/students/:id', authenticateToken, requireAdmin, async (req, res)
     }
   } catch (error) {
     console.error('Delete student error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '학생 삭제 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '학생 삭제 중 오류가 발생했습니다.'
     });
   }
 });
@@ -70,9 +67,9 @@ router.get('/students/:id/progress', authenticateToken, requireAdmin, async (req
     });
   } catch (error) {
     console.error('Get student progress error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '학생 진도 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '학생 진도 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -88,9 +85,9 @@ router.get('/students/:id/assessments', authenticateToken, requireAdmin, async (
     });
   } catch (error) {
     console.error('Get student assessments error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '학생 평가 결과 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '학생 평가 결과 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -113,9 +110,9 @@ router.get('/statistics', authenticateToken, requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Get statistics error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '통계 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '통계 조회 중 오류가 발생했습니다.'
     });
   }
 });

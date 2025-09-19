@@ -26,6 +26,6 @@ db.all(`
       console.log('-'.repeat(50));
     });
   }
-  
+
   db.close();
 });

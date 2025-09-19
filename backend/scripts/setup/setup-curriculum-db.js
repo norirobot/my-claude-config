@@ -15,7 +15,7 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // 차시(Lessons) 테이블 
+  // 차시(Lessons) 테이블
   db.run(`CREATE TABLE IF NOT EXISTS curriculum_lessons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     unit_id INTEGER NOT NULL,

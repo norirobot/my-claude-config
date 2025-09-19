@@ -5,7 +5,7 @@ const db = new sqlite3.Database('./database.db');
 // 추가 학생 계정 3명
 const additionalStudents = [
   ['student7', '1234', '김민준'],
-  ['student8', '1234', '이서연'],  
+  ['student8', '1234', '이서연'],
   ['student9', '1234', '박도현']
 ];
 
@@ -13,15 +13,15 @@ console.log('👥 추가 학생 계정 3명 생성 중...');
 
 db.serialize(() => {
   additionalStudents.forEach(([username, password, name], index) => {
-    db.run(`INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)`,
-      [username, password, name, 'student'], 
+    db.run('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+      [username, password, name, 'student'],
       function(err) {
         if (err) {
           console.error(`${name} 계정 생성 실패:`, err.message);
         } else {
           console.log(`✅ ${name} (${username}) 계정 생성 완료`);
         }
-        
+
         if (index === additionalStudents.length - 1) {
           console.log('\n🎉 총 9명의 학생 계정 생성 완료!');
           console.log('📋 전체 학생 계정:');

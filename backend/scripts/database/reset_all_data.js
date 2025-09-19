@@ -24,7 +24,7 @@ db.serialize(() => {
   // 테스트용 학생 계정 추가
   const students = [
     ['student1', '1234', '김철수'],
-    ['student2', '1234', '이영희'],  
+    ['student2', '1234', '이영희'],
     ['student3', '1234', '박민수'],
     ['student4', '1234', '최지혜'],
     ['student5', '1234', '정우진'],
@@ -33,8 +33,8 @@ db.serialize(() => {
 
   console.log('📝 테스트 학생 계정 생성 중...');
   students.forEach(([username, password, name], index) => {
-    db.run(`INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)`,
-      [username, password, name, 'student'], 
+    db.run('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+      [username, password, name, 'student'],
       function(err) {
         if (err) {
           console.error(`${name} 계정 생성 실패:`, err.message);
@@ -73,24 +73,24 @@ db.serialize(() => {
   problems.forEach((problem, index) => {
     db.run(`INSERT INTO problems (title, description, lesson, expectedOutput, starterCode, language, difficulty, category, isActive) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [problem.title, problem.description, problem.lesson, problem.expectedOutput, 
-       problem.starterCode, 'c', 'beginner', 'basic', 1], 
-      function(err) {
-        if (err) {
-          console.error(`문제 ${index + 1} 생성 실패:`, err.message);
-        } else {
-          console.log(`✅ 문제 ${index + 1}: ${problem.title} 생성 완료`);
-        }
-        
-        if (index === problems.length - 1) {
-          console.log('\n🎉 전체 데이터 초기화 완료!');
-          console.log('📋 생성된 계정 정보:');
-          console.log('관리자: admin / admin123');
-          students.forEach(([username, password, name]) => {
-            console.log(`학생: ${username} / ${password} (${name})`);
-          });
-          db.close();
-        }
-      });
+    [problem.title, problem.description, problem.lesson, problem.expectedOutput,
+      problem.starterCode, 'c', 'beginner', 'basic', 1],
+    function(err) {
+      if (err) {
+        console.error(`문제 ${index + 1} 생성 실패:`, err.message);
+      } else {
+        console.log(`✅ 문제 ${index + 1}: ${problem.title} 생성 완료`);
+      }
+
+      if (index === problems.length - 1) {
+        console.log('\n🎉 전체 데이터 초기화 완료!');
+        console.log('📋 생성된 계정 정보:');
+        console.log('관리자: admin / admin123');
+        students.forEach(([username, password, name]) => {
+          console.log(`학생: ${username} / ${password} (${name})`);
+        });
+        db.close();
+      }
+    });
   });
 });

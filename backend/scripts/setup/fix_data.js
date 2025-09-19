@@ -63,7 +63,7 @@ db.serialize(() => {
       expectedOutput: '안녕하세요!',
       starterCode: '#include <stdio.h>\n\nint main() {\n    // 여기에 코드를 입력하세요\n    return 0;\n}'
     },
-    
+
     // 2차시 - 3문제
     {
       title: '정수 변수 출력',
@@ -86,7 +86,7 @@ db.serialize(() => {
       expectedOutput: '3.140000',
       starterCode: '#include <stdio.h>\n\nint main() {\n    // 여기에 코드를 입력하세요\n    return 0;\n}'
     },
-    
+
     // 3차시 - 3문제
     {
       title: '덧셈 계산',
@@ -116,22 +116,22 @@ db.serialize(() => {
     setTimeout(() => {
       db.run(`INSERT INTO problems (title, description, lesson, expectedOutput, starterCode, language, difficulty, category, isActive) 
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [problem.title, problem.description, problem.lesson, problem.expectedOutput, 
-         problem.starterCode, 'c', 'beginner', 'basic', 1], 
-        function(err) {
-          if (err) {
-            console.error(`문제 ${index + 1} 생성 실패:`, err.message);
-          } else {
-            console.log(`✅ [${problem.lesson}차시] ${problem.title} 생성 완료`);
-          }
-          
-          if (index === problems.length - 1) {
-            console.log('\n🎉 모든 데이터 수정 완료!');
-            console.log('✅ 9명의 학생 이름 수정 완료');
-            console.log('✅ 3차시 × 3문제 = 총 9개 문제 생성 완료');
-            db.close();
-          }
-        });
+      [problem.title, problem.description, problem.lesson, problem.expectedOutput,
+        problem.starterCode, 'c', 'beginner', 'basic', 1],
+      function(err) {
+        if (err) {
+          console.error(`문제 ${index + 1} 생성 실패:`, err.message);
+        } else {
+          console.log(`✅ [${problem.lesson}차시] ${problem.title} 생성 완료`);
+        }
+
+        if (index === problems.length - 1) {
+          console.log('\n🎉 모든 데이터 수정 완료!');
+          console.log('✅ 9명의 학생 이름 수정 완료');
+          console.log('✅ 3차시 × 3문제 = 총 9개 문제 생성 완료');
+          db.close();
+        }
+      });
     }, index * 100); // 순차적으로 실행
   });
 });

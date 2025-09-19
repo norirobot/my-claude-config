@@ -14,7 +14,7 @@ db.serialize(() => {
   // 5명의 학생만 추가
   const students = [
     ['student1', '1234', '김학생'],
-    ['student2', '1234', '이학생'],  
+    ['student2', '1234', '이학생'],
     ['student3', '1234', '박학생'],
     ['student4', '1234', '서현준'],
     ['student5', '1234', '김철수']
@@ -22,15 +22,15 @@ db.serialize(() => {
 
   console.log('👥 5명의 학생 계정 생성 중...');
   students.forEach(([username, password, name], index) => {
-    db.run(`INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)`,
-      [username, password, name, 'student'], 
+    db.run('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)',
+      [username, password, name, 'student'],
       function(err) {
         if (err) {
           console.error(`${name} 계정 생성 실패:`, err.message);
         } else {
           console.log(`✅ ${name} (${username}) 계정 생성 완료`);
         }
-        
+
         if (index === students.length - 1) {
           console.log('\n🎉 5명의 학생 계정 생성 완료!');
           console.log('📋 학생 계정 목록:');

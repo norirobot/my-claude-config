@@ -6,7 +6,7 @@ const db = new sqlite3.Database(dbPath);
 
 console.log('중복 문제 확인 중...\n');
 
-db.all("SELECT id, title, outputExample, solution FROM problems WHERE id IN (4, 7, 9, 12) ORDER BY id", (err, rows) => {
+db.all('SELECT id, title, outputExample, solution FROM problems WHERE id IN (4, 7, 9, 12) ORDER BY id', (err, rows) => {
   if (err) {
     console.error('오류:', err);
   } else {
@@ -18,6 +18,6 @@ db.all("SELECT id, title, outputExample, solution FROM problems WHERE id IN (4, 
       console.log('');
     });
   }
-  
+
   db.close();
 });

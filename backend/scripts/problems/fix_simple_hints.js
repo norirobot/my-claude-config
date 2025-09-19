@@ -50,22 +50,22 @@ const simpleHints = [
 
 db.serialize(() => {
   console.log('📚 간단한 힌트로 업데이트 중...\n');
-  
+
   simpleHints.forEach((update, index) => {
     setTimeout(() => {
-      db.run(`UPDATE problems SET hints = ? WHERE id = ?`,
-        [update.hints, update.id], 
+      db.run('UPDATE problems SET hints = ? WHERE id = ?',
+        [update.hints, update.id],
         function(err) {
           if (err) {
             console.error(`문제 ${update.id} 힌트 업데이트 실패:`, err.message);
           } else {
             console.log(`✅ 문제 ${update.id}: 간단한 힌트로 수정 완료`);
           }
-          
+
           if (index === simpleHints.length - 1) {
             console.log('\n🎉 모든 힌트를 간단하고 자연스럽게 수정 완료!');
             console.log('✅ 한 줄로 깔끔하게 변경됨');
-            
+
             // 최종 결과 확인
             console.log('\n📋 수정된 힌트 확인:');
             db.all('SELECT id, title, hints FROM problems ORDER BY id LIMIT 5', (err, problems) => {

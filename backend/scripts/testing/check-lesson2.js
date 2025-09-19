@@ -6,7 +6,7 @@ const db = new sqlite3.Database(dbPath);
 
 console.log('2차시 문제들 확인 중...\n');
 
-db.all("SELECT id, title, lesson, starterCode FROM problems WHERE lesson = 2 ORDER BY id", (err, rows) => {
+db.all('SELECT id, title, lesson, starterCode FROM problems WHERE lesson = 2 ORDER BY id', (err, rows) => {
   if (err) {
     console.error('오류:', err);
   } else {
@@ -18,6 +18,6 @@ db.all("SELECT id, title, lesson, starterCode FROM problems WHERE lesson = 2 ORD
       console.log('');
     });
   }
-  
+
   db.close();
 });

@@ -5,7 +5,7 @@ console.log('');
 console.log('// 김도현 (ID: 21)');
 console.log('localStorage.removeItem("student_21_problem_3_code");');
 console.log('');
-console.log('// 최문석 (ID: 22)');  
+console.log('// 최문석 (ID: 22)');
 console.log('localStorage.removeItem("student_22_problem_3_code");');
 console.log('');
 console.log('// 모든 학생의 3번 문제 localStorage 삭제');

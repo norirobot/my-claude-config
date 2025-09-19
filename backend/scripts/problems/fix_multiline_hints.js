@@ -50,18 +50,18 @@ const betterHints = [
 
 db.serialize(() => {
   console.log('📚 여러 줄 힌트로 업데이트 중...\n');
-  
+
   betterHints.forEach((update, index) => {
     setTimeout(() => {
-      db.run(`UPDATE problems SET hints = ? WHERE id = ?`,
-        [update.hints, update.id], 
+      db.run('UPDATE problems SET hints = ? WHERE id = ?',
+        [update.hints, update.id],
         function(err) {
           if (err) {
             console.error(`문제 ${update.id} 힌트 업데이트 실패:`, err.message);
           } else {
             console.log(`✅ 문제 ${update.id}: 여러 줄 힌트로 수정 완료`);
           }
-          
+
           if (index === betterHints.length - 1) {
             console.log('\n🎉 모든 힌트를 여러 줄로 수정 완료!');
             console.log('✅ 보기 쉬운 형태로 변경됨');

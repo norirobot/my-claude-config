@@ -55,23 +55,23 @@ const updates = [
 
 db.serialize(() => {
   console.log('📚 문제 제목 및 힌트 업데이트 중...\n');
-  
+
   updates.forEach((update, index) => {
     setTimeout(() => {
-      db.run(`UPDATE problems SET title = ?, hints = ? WHERE id = ?`,
-        [update.title, update.hints, update.id], 
+      db.run('UPDATE problems SET title = ?, hints = ? WHERE id = ?',
+        [update.title, update.hints, update.id],
         function(err) {
           if (err) {
             console.error(`문제 ${update.id} 업데이트 실패:`, err.message);
           } else {
             console.log(`✅ 문제 ${update.id}: "${update.title}" - 힌트 추가 완료`);
           }
-          
+
           if (index === updates.length - 1) {
             console.log('\n🎉 모든 문제 업데이트 완료!');
             console.log('✅ 문제 2번 제목: "내 이름 출력하기" → "홍길동 출력하기"');
             console.log('✅ 모든 문제에 힌트 추가');
-            
+
             // 업데이트 결과 확인
             console.log('\n📋 업데이트 결과 확인:');
             db.all('SELECT id, title, hints FROM problems ORDER BY id', (err, problems) => {

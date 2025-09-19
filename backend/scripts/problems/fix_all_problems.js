@@ -37,7 +37,7 @@ const problems = [
     expectedOutput: '안녕하세요!',
     starterCode: '#include <stdio.h>\n\nint main() {\n    // 여기에 코드를 입력하세요\n    return 0;\n}'
   },
-  
+
   // 2차시 - 3문제
   {
     id: 4,
@@ -69,7 +69,7 @@ const problems = [
     expectedOutput: '3.140000',
     starterCode: '#include <stdio.h>\n\nint main() {\n    // 여기에 코드를 입력하세요\n    return 0;\n}'
   },
-  
+
   // 3차시 - 3문제
   {
     id: 7,
@@ -115,29 +115,29 @@ db.serialize(() => {
 
   // 새로운 문제들 추가
   console.log('📚 새로운 문제 데이터 추가 중...\n');
-  
+
   problems.forEach((problem, index) => {
     setTimeout(() => {
       db.run(`INSERT INTO problems (id, title, description, lesson, inputExample, outputExample, expectedOutput, starterCode, language, difficulty, category, isActive) 
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [problem.id, problem.title, problem.description, problem.lesson, 
-         problem.inputExample, problem.outputExample, problem.expectedOutput, problem.starterCode, 
-         'c', 'beginner', 'basic', 1], 
-        function(err) {
-          if (err) {
-            console.error(`문제 ${problem.id} 생성 실패:`, err.message);
-          } else {
-            console.log(`✅ [${problem.lesson}차시] ${problem.title} 생성 완료`);
-          }
-          
-          if (index === problems.length - 1) {
-            console.log('\n🎉 모든 문제 수정 완료!');
-            console.log('✅ 3차시 × 3문제 = 총 9개 문제');
-            console.log('✅ 모든 문제에 입력예시/출력예시 추가');
-            console.log('✅ 모든 문제에 플레이스홀더 주석 포함');
-            db.close();
-          }
-        });
+      [problem.id, problem.title, problem.description, problem.lesson,
+        problem.inputExample, problem.outputExample, problem.expectedOutput, problem.starterCode,
+        'c', 'beginner', 'basic', 1],
+      function(err) {
+        if (err) {
+          console.error(`문제 ${problem.id} 생성 실패:`, err.message);
+        } else {
+          console.log(`✅ [${problem.lesson}차시] ${problem.title} 생성 완료`);
+        }
+
+        if (index === problems.length - 1) {
+          console.log('\n🎉 모든 문제 수정 완료!');
+          console.log('✅ 3차시 × 3문제 = 총 9개 문제');
+          console.log('✅ 모든 문제에 입력예시/출력예시 추가');
+          console.log('✅ 모든 문제에 플레이스홀더 주석 포함');
+          db.close();
+        }
+      });
     }, index * 100);
   });
 });

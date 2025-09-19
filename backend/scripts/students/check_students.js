@@ -18,7 +18,7 @@ db.all('SELECT * FROM users WHERE role = "student" ORDER BY username', (err, row
       console.log('❌ 학생 계정이 없습니다.');
     }
   }
-  
+
   // 문제도 확인
   db.all('SELECT id, title, lesson FROM problems ORDER BY lesson', (err, problems) => {
     if (err) {

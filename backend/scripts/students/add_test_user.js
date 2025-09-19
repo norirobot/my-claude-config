@@ -7,8 +7,8 @@ const username = 'student6';
 const password = '1234';
 const name = '서현준';
 
-db.run(`INSERT INTO users (username, password, name, role, createdAt) VALUES (?, ?, ?, ?, ?)`,
-  [username, password, name, 'student', new Date().toISOString()], 
+db.run('INSERT INTO users (username, password, name, role, createdAt) VALUES (?, ?, ?, ?, ?)',
+  [username, password, name, 'student', new Date().toISOString()],
   function(err) {
     if (err) {
       console.error('사용자 생성 실패:', err.message);

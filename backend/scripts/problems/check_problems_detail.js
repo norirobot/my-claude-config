@@ -16,7 +16,7 @@ db.all('SELECT * FROM problems ORDER BY lesson, id', (err, problems) => {
       console.log(`   기대출력: ${problem.expectedOutput || '❌ 없음'}`);
       console.log(`   시작코드 포함: ${problem.starterCode ? '✅' : '❌'}`);
       if (problem.starterCode) {
-        const hasPlaceholder = problem.starterCode.includes('// 여기에 코드를 입력하세요') || 
+        const hasPlaceholder = problem.starterCode.includes('// 여기에 코드를 입력하세요') ||
                               problem.starterCode.includes('// 여기에 코드를 작성하세요');
         console.log(`   플레이스홀더: ${hasPlaceholder ? '✅' : '❌'}`);
       }

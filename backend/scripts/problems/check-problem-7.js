@@ -6,7 +6,7 @@ const db = new sqlite3.Database(dbPath);
 
 console.log('7번 문제 상세 정보 확인 중...\n');
 
-db.get("SELECT * FROM problems WHERE id = 7", (err, row) => {
+db.get('SELECT * FROM problems WHERE id = 7', (err, row) => {
   if (err) {
     console.error('오류:', err);
   } else if (row) {
@@ -27,6 +27,6 @@ db.get("SELECT * FROM problems WHERE id = 7", (err, row) => {
   } else {
     console.log('7번 문제를 찾을 수 없습니다.');
   }
-  
+
   db.close();
 });

@@ -97,16 +97,16 @@ const additionalProblems = [
 
 db.serialize(() => {
   console.log('🔧 1차시 추가 문제 삽입 시작...\n');
-  
+
   let completed = 0;
   const total = additionalProblems.length;
-  
+
   additionalProblems.forEach((problem, index) => {
     const sql = `INSERT INTO problems (
       title, description, language, difficulty, category, lesson, 
       inputExample, outputExample, starterCode, solution, hints, isActive
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    
+
     const params = [
       problem.title,
       problem.description,
@@ -121,7 +121,7 @@ db.serialize(() => {
       problem.hints,
       problem.isActive
     ];
-    
+
     db.run(sql, params, function(err) {
       completed++;
       if (err) {
@@ -129,7 +129,7 @@ db.serialize(() => {
       } else {
         console.log(`✅ ${completed}/${total} "${problem.title}" 추가됨 (ID: ${this.lastID})`);
       }
-      
+
       // 모든 문제 추가 완료 시
       if (completed === total) {
         console.log(`\n🎉 1차시 추가 문제 ${total}개가 성공적으로 추가되었습니다!`);
@@ -143,7 +143,7 @@ db.serialize(() => {
         console.log('   7. 두 단어 출력하기 ← NEW');
         console.log('   8. 간단한 문장 출력하기 ← NEW');
         console.log('\n🚀 이제 1차시에 충분한 연습 문제가 있습니다!');
-        
+
         // 데이터베이스 연결 종료
         db.close((err) => {
           if (err) {

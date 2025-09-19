@@ -24,11 +24,11 @@ db.all(`
       console.log(row.code || '(코드 없음)');
       console.log('-'.repeat(80));
     });
-    
+
     if (rows.length === 0) {
       console.log('제출된 코드가 없습니다.');
     }
   }
-  
+
   db.close();
 });

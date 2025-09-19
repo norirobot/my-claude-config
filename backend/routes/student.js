@@ -1,16 +1,13 @@
 const express = require('express');
-const User = require('../models/User');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
-
-const user = new User();
 
 // 학생 권한 확인 미들웨어
 function requireStudent(req, res, next) {
   if (req.user.role !== 'student') {
-    return res.status(403).json({ 
-      success: false, 
-      message: '학생 권한이 필요합니다.' 
+    return res.status(403).json({
+      success: false,
+      message: '학생 권한이 필요합니다.'
     });
   }
   next();
@@ -26,9 +23,9 @@ router.get('/progress', authenticateToken, requireStudent, async (req, res) => {
     });
   } catch (error) {
     console.error('Get progress error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '진도 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '진도 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -37,14 +34,14 @@ router.get('/progress', authenticateToken, requireStudent, async (req, res) => {
 router.post('/progress', authenticateToken, requireStudent, async (req, res) => {
   try {
     const { levelId, chapterId, completed, stars, code, completionTime } = req.body;
-    
+
     const progressId = await user.saveProgress(
-      req.user.userId, 
-      levelId, 
-      chapterId, 
-      completed, 
-      stars, 
-      code, 
+      req.user.userId,
+      levelId,
+      chapterId,
+      completed,
+      stars,
+      code,
       completionTime
     );
 
@@ -55,9 +52,9 @@ router.post('/progress', authenticateToken, requireStudent, async (req, res) => 
     });
   } catch (error) {
     console.error('Save progress error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '진도 저장 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '진도 저장 중 오류가 발생했습니다.'
     });
   }
 });
@@ -72,9 +69,9 @@ router.get('/assessments', authenticateToken, requireStudent, async (req, res) =
     });
   } catch (error) {
     console.error('Get assessments error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '평가 결과 조회 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '평가 결과 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -83,13 +80,13 @@ router.get('/assessments', authenticateToken, requireStudent, async (req, res) =
 router.post('/assessments', authenticateToken, requireStudent, async (req, res) => {
   try {
     const { assessmentType, assessmentName, score, maxScore, details } = req.body;
-    
+
     const assessmentId = await user.saveAssessmentResult(
-      req.user.userId, 
-      assessmentType, 
-      assessmentName, 
-      score, 
-      maxScore, 
+      req.user.userId,
+      assessmentType,
+      assessmentName,
+      score,
+      maxScore,
       details
     );
 
@@ -100,9 +97,9 @@ router.post('/assessments', authenticateToken, requireStudent, async (req, res) 
     });
   } catch (error) {
     console.error('Save assessment error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '평가 결과 저장 중 오류가 발생했습니다.' 
+    res.status(500).json({
+      success: false,
+      message: '평가 결과 저장 중 오류가 발생했습니다.'
     });
   }
 });

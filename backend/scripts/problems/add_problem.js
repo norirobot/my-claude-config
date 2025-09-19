@@ -22,7 +22,7 @@ function addProblem(problemData) {
       solution = '',
       isActive = 1
     } = problemData;
-    
+
     db.run(`
       INSERT INTO problems (
         title, description, language, difficulty, category, lesson,

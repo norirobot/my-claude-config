@@ -46,22 +46,22 @@ const properHints = [
 
 db.serialize(() => {
   console.log('📚 적절한 힌트로 업데이트 중...\n');
-  
+
   properHints.forEach((update, index) => {
     setTimeout(() => {
-      db.run(`UPDATE problems SET hints = ? WHERE id = ?`,
-        [update.hints, update.id], 
+      db.run('UPDATE problems SET hints = ? WHERE id = ?',
+        [update.hints, update.id],
         function(err) {
           if (err) {
             console.error(`문제 ${update.id} 힌트 업데이트 실패:`, err.message);
           } else {
             console.log(`✅ 문제 ${update.id}: 힌트 수정 완료`);
           }
-          
+
           if (index === properHints.length - 1) {
             console.log('\n🎉 모든 힌트 수정 완료!');
             console.log('✅ 정답을 직접 알려주지 않는 적절한 힌트로 변경');
-            
+
             // 업데이트 결과 확인
             console.log('\n📋 수정된 힌트 확인:');
             db.all('SELECT id, title, hints FROM problems ORDER BY id', (err, problems) => {
