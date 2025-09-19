@@ -3,7 +3,6 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import Editor from '@monaco-editor/react';
 // import BlocklyEditor from './BlocklyEditor';
-import GameMap from './GameMap';
 import Login from './Login';
 import AdminPanel from './AdminPanel';
 import StudentDashboard from './StudentDashboard';
@@ -3681,19 +3680,6 @@ const CodingMentoringPlatform = () => {
                   >
                     👁️ 학생 뷰
                   </button>
-                  <button
-                    onClick={() => setCurrentTab('game')}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: currentTab === 'game' ? '#2563eb' : '#f3f4f6',
-                      color: currentTab === 'game' ? 'white' : '#374151',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🎮 게임맵
-                  </button>
                 </>
               )}
               {userType === 'student' && (
@@ -3862,9 +3848,6 @@ const CodingMentoringPlatform = () => {
             onEditLesson={editLesson}
             onDeleteLesson={deleteLesson}
           />
-        ) : userType === 'admin' && currentTab === 'game' ? (
-          /* 게임맵 인터페이스 */
-          <GameMap user={user} userType={userType} />
         ) : (
           /* 학생 뷰 */
           <StudentView 

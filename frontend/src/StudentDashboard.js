@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import GameMap from './GameMap';
 // import BlocklyEditor from './BlocklyEditor';
 import AssessmentReport from './AssessmentReport';
 
 const StudentDashboard = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('gameMap');
+  const [activeTab, setActiveTab] = useState('assessments');
   const [progress, setProgress] = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [currentLevel, setCurrentLevel] = useState(null);
@@ -107,16 +106,6 @@ const StudentDashboard = ({ user }) => {
 
   // handleAssessmentComplete 사용하지 않음
 
-  const renderGameMap = () => (
-    <GameMap
-      progress={progress}
-      onLevelComplete={handleLevelComplete}
-      onLevelSelect={(level) => {
-        setCurrentLevel(level);
-        // 블록코딩 비활성화됨
-      }}
-    />
-  );
 
 
   const renderAssessments = () => {
@@ -144,21 +133,7 @@ const StudentDashboard = ({ user }) => {
             color: '#666' 
           }}>
             <h4>아직 평가를 받지 않았습니다</h4>
-            <p>게임 맵에서 레벨을 완성하고 평가를 받아보세요!</p>
-            <button
-              onClick={() => setActiveTab('gameMap')}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginTop: '10px'
-              }}
-            >
-              게임 맵으로 가기
-            </button>
+            <p>문제를 풀고 평가를 받아보세요!</p>
           </div>
         )}
         
@@ -269,21 +244,7 @@ const StudentDashboard = ({ user }) => {
           color: '#666' 
         }}>
           <h4>아직 진도가 없습니다</h4>
-          <p>게임 맵에서 레벨을 시작해보세요!</p>
-          <button
-            onClick={() => setActiveTab('gameMap')}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            게임 맵으로 가기
-          </button>
+          <p>문제를 풀어서 진도를 만들어보세요!</p>
         </div>
       )}
     </div>
@@ -330,7 +291,6 @@ const StudentDashboard = ({ user }) => {
       {/* 탭 네비게이션 */}
       <div style={{ borderBottom: '1px solid #ddd' }}>
         {[
-          { key: 'gameMap', label: '게임 맵', icon: '🗺️' },
           { key: 'assessments', label: '평가 결과', icon: '📊' },
           { key: 'progress', label: '진도 현황', icon: '📈' }
         ].map(tab => (
@@ -354,7 +314,6 @@ const StudentDashboard = ({ user }) => {
 
       {/* 탭 컨텐츠 */}
       <div>
-        {activeTab === 'gameMap' && renderGameMap()}
         {activeTab === 'assessments' && renderAssessments()}
         {activeTab === 'progress' && renderProgress()}
       </div>
