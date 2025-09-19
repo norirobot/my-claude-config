@@ -1121,7 +1121,27 @@ app.post('/api/login', (req, res) => {
         console.log('✅ 학생 로그인 성공:', row);
         // 학생 상태를 온라인으로 변경
         db.run('UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id = ?', 
-               ['online', row.id]);
+               ['online', row.id], function(err) {
+          if (err) {
+            console.error('학생 온라인 상태 업데이트 실패:', err.message);
+          } else {
+            console.log(`✅ 학생 ${row.id} (${row.name}) 온라인 상태로 업데이트 완료`);
+            
+            // 🚀 [직접 연결 등록] 학생 로그인 시 연결된 학생 목록에 추가
+            connectedStudents.add(row.id);
+            console.log('🚀 [직접 연결 등록] 학생을 연결된 목록에 추가:', row.id);
+            console.log('📊 [직접 연결 등록] 현재 연결된 학생 ID들:', Array.from(connectedStudents));
+            
+            // 모든 관리자에게 학생 온라인 상태 브로드캐스트
+            io.emit('studentStatusUpdated', { 
+              studentId: row.id, 
+              status: 'online',
+              loginType: 'normal',
+              timestamp: new Date().toISOString()
+            });
+            console.log('📡 학생 온라인 상태 브로드캐스트 완료');
+          }
+        });
         res.json({ success: true, type: 'student', user: row });
       } else {
         res.json({ success: false, message: '잘못된 학번 또는 이름입니다.' });
@@ -1215,6 +1235,42 @@ app.delete('/api/students/:id', (req, res) => {
       return;
     }
     res.json({ success: true });
+  });
+});
+
+// 학생 진도 업데이트 (실행 버튼 누를 때마다 호출)
+app.put('/api/students/:id/progress', (req, res) => {
+  const { currentProblem, problemId, timestamp } = req.body;
+  const studentId = req.params.id;
+  
+  console.log('📊 [진도 업데이트] 요청 받음:', { 
+    studentId, 
+    currentProblem, 
+    problemId, 
+    timestamp 
+  });
+  
+  // currentProblem을 업데이트하고, 필요하면 progress도 증가시킬 수 있음
+  db.run('UPDATE students SET currentProblem = ?, lastActive = DATETIME("now") WHERE id = ?', 
+         [currentProblem, studentId], function(err) {
+    if (err) {
+      console.error('❌ [진도 업데이트] 데이터베이스 에러:', err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    console.log('✅ [진도 업데이트] 성공:', { 
+      studentId, 
+      currentProblem, 
+      changes: this.changes 
+    });
+    
+    res.json({ 
+      success: true, 
+      changes: this.changes,
+      currentProblem: currentProblem,
+      updatedAt: timestamp
+    });
   });
 });
 
@@ -1843,6 +1899,35 @@ app.get('/api/student/:studentId/problem-status', (req, res) => {
   });
 });
 
+// 학생의 현재 화면 상태 조회 API
+app.get('/api/admin/student/:studentId/current-screen', (req, res) => {
+  const studentId = req.params.studentId;
+  console.log('📺 [API] 학생 현재 화면 상태 조회 요청:', studentId);
+  console.log('📦 [API] 현재 studentScreens 전체 데이터:', Object.keys(studentScreens));
+  
+  // studentScreens에서 해당 학생의 최신 화면 상태 반환
+  const screenData = studentScreens[studentId];
+  
+  if (screenData) {
+    console.log('✅ [API] 학생 화면 상태 발견:', {
+      studentId: screenData.studentId,
+      studentName: screenData.studentName,
+      selectedProblem: screenData.selectedProblem?.title || screenData.selectedProblem,
+      timestamp: screenData.timestamp
+    });
+    res.json({
+      success: true,
+      screenData: screenData
+    });
+  } else {
+    console.log('⚠️ [API] 학생 화면 상태 없음 - studentId:', studentId);
+    res.json({
+      success: false,
+      message: '학생의 화면 상태를 찾을 수 없습니다.'
+    });
+  }
+});
+
 // 관리자용 모든 학생 코드 조회 API
 app.get('/api/admin/students-code', (req, res) => {
   db.all(`
@@ -2411,9 +2496,150 @@ app.post('/api/execute', async (req, res) => {
   }
 });
 
+// 현재 연결된 학생들 추적
+const connectedStudents = new Set();
+const studentScreens = {}; // 학생 화면 상태 저장
+
+// HTTP API를 통한 학생 식별 엔드포인트
+app.post('/api/identify-student', (req, res) => {
+  const { studentId, userType } = req.body;
+  
+  console.log('🌐 [HTTP API] 학생 식별 요청:', { studentId, userType });
+  
+  if (userType === 'student' && studentId) {
+    connectedStudents.add(studentId);
+    console.log('✅ [HTTP API] 학생 연결 상태 등록:', { studentId });
+    console.log('📊 [HTTP API] 현재 연결된 학생 ID들:', Array.from(connectedStudents));
+    
+    res.json({ 
+      success: true, 
+      message: `학생 ${studentId}이 연결 상태로 등록되었습니다.`,
+      connectedCount: connectedStudents.size 
+    });
+  } else {
+    console.log('❌ [HTTP API] 잘못된 학생 식별 요청:', { studentId, userType });
+    res.status(400).json({ 
+      success: false, 
+      message: '잘못된 학생 식별 정보입니다.' 
+    });
+  }
+});
+
+// 모든 학생 상태를 offline으로 리셋하는 API (개선된 버전)
+app.post('/api/admin/reset-student-status', (req, res) => {
+  console.log('🔄 스마트 학생 상태 리셋 시작');
+  console.log('📊 현재 연결된 학생 ID들:', Array.from(connectedStudents));
+  
+  // 현재 연결된 학생들은 제외하고 나머지만 offline으로 설정
+  const connectedList = Array.from(connectedStudents);
+  let query, params;
+  
+  if (connectedList.length > 0) {
+    const placeholders = connectedList.map(() => '?').join(',');
+    query = `UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id NOT IN (${placeholders})`;
+    params = ['offline', ...connectedList];
+    console.log('🎯 연결된 학생들은 제외하고 나머지만 offline으로 처리');
+  } else {
+    query = 'UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE 1=1';
+    params = ['offline'];
+    console.log('⚠️ 연결된 학생이 없으므로 모든 학생을 offline으로 처리');
+  }
+  
+  db.run(query, params, function(err) {
+    if (err) {
+      console.error('학생 상태 리셋 실패:', err.message);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    console.log(`✅ ${this.changes}명의 학생 상태를 offline으로 업데이트 완료`);
+    console.log(`🟢 ${connectedList.length}명의 연결된 학생은 온라인 상태 유지`);
+    
+    // 모든 연결된 클라이언트에게 상태 변경 브로드캐스트
+    io.emit('allStudentsStatusReset', { 
+      status: 'offline',
+      timestamp: new Date().toISOString(),
+      message: `${this.changes}명의 비연결 학생이 offline으로 변경되었습니다. (${connectedList.length}명은 온라인 유지)`,
+      offlineCount: this.changes,
+      onlineCount: connectedList.length,
+      onlineStudentIds: connectedList // 온라인 유지된 학생 ID 목록 추가
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `${this.changes}명의 비연결 학생을 offline으로 업데이트했습니다. (${connectedList.length}명은 온라인 유지)`,
+      updatedCount: this.changes,
+      onlineCount: connectedList.length
+    });
+  });
+});
+
+// 디버깅: 연결된 학생 상태 조회 및 강제 제거
+app.post('/api/admin/debug-connected-students', (req, res) => {
+  const { action, studentId } = req.body;
+  
+  if (action === 'list') {
+    res.json({
+      success: true,
+      connectedStudents: Array.from(connectedStudents),
+      count: connectedStudents.size
+    });
+  } else if (action === 'remove' && studentId) {
+    const wasConnected = connectedStudents.has(studentId);
+    connectedStudents.delete(studentId);
+    
+    console.log(`🔧 [디버그] 학생 ${studentId}을 연결 목록에서 강제 제거`);
+    console.log(`📊 [디버그] 현재 연결된 학생 ID들:`, Array.from(connectedStudents));
+    
+    res.json({
+      success: true,
+      message: `학생 ${studentId}${wasConnected ? '이 제거되었습니다' : '는 이미 연결되지 않았습니다'}`,
+      connectedStudents: Array.from(connectedStudents)
+    });
+  } else if (action === 'clear') {
+    connectedStudents.clear();
+    console.log(`🔧 [디버그] 모든 연결된 학생 목록 초기화`);
+    
+    res.json({
+      success: true,
+      message: '모든 연결된 학생 목록이 초기화되었습니다',
+      connectedStudents: []
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+      message: 'Invalid action. Use: list, remove, or clear'
+    });
+  }
+});
+
 // Socket.io 연결 처리
 io.on('connection', (socket) => {
   console.log('사용자가 연결되었습니다:', socket.id);
+  
+  // 사용자 식별 정보 저장
+  socket.on('identify', (data) => {
+    socket.userType = data.userType;
+    
+    // 관리자 식별 처리
+    if (data.userType === 'admin') {
+      socket.adminId = data.adminId || 'admin';
+      console.log('🔍 관리자 식별됨:', {
+        adminId: socket.adminId,
+        userType: socket.userType,
+        socketId: socket.id
+      });
+    }
+    // 학생 식별 처리
+    else if (data.userType === 'student' && data.studentId) {
+      socket.studentId = data.studentId;
+      connectedStudents.add(data.studentId);
+      console.log('✅ 연결된 학생 추가:', data.studentId);
+      console.log('📊 현재 연결된 학생 수:', connectedStudents.size);
+    }
+    
+    console.log('사용자 식별됨:', { studentId: data.studentId, userType: data.userType, socketId: socket.id });
+  });
 
   // 학생 코드 업데이트
   socket.on('updateCode', (data) => {
@@ -2514,8 +2740,155 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('studentCodeChange', codeData);
   });
 
+  // 학생 수동 로그아웃 처리
+  socket.on('studentLogout', (logoutData) => {
+    console.log('🚪 학생 수동 로그아웃 처리:', logoutData);
+    
+    // 🚀 [로그아웃] connectedStudents Set에서 제거
+    connectedStudents.delete(logoutData.studentId);
+    console.log('🚪 [로그아웃] 학생을 연결된 목록에서 제거:', logoutData.studentId);
+    console.log('📊 [로그아웃] 현재 연결된 학생 ID들:', Array.from(connectedStudents));
+    
+    // 데이터베이스에서 학생 상태를 offline으로 업데이트
+    db.run('UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id = ?', 
+           ['offline', logoutData.studentId], (err) => {
+      if (err) {
+        console.error('학생 로그아웃 상태 업데이트 실패:', err.message);
+      } else {
+        console.log(`학생 ${logoutData.studentId} 수동 로그아웃 상태 업데이트 완료`);
+        
+        // 모든 연결된 클라이언트에게 상태 변경 브로드캐스트
+        socket.broadcast.emit('studentStatusUpdated', { 
+          studentId: logoutData.studentId, 
+          status: 'offline',
+          logoutType: 'manual'
+        });
+        
+        console.log('✅ 학생 로그아웃 상태 브로드캐스트 완료');
+      }
+    });
+  });
+
+  // 학생 화면 상태 업데이트
+  socket.on('studentScreenUpdate', (screenData) => {
+    console.log('🔍 [DEBUG] studentScreenUpdate 이벤트 받음 - 상세 정보:');
+    console.log('🔍 [DEBUG] Socket 정보:', {
+      socketId: socket.id,
+      remoteAddress: socket.request.connection?.remoteAddress,
+      userAgent: socket.request.headers?.['user-agent']?.substring(0, 100) + '...',
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('📺 학생 화면 상태 업데이트 받음:', {
+      studentId: screenData.studentId,
+      studentName: screenData.studentName,
+      currentScreen: screenData.currentScreen,
+      selectedProblem: screenData.selectedProblem?.title || screenData.selectedProblem,
+      problemId: screenData.selectedProblem?.id || screenData.problemId,
+      timestamp: screenData.timestamp,
+      dataKeys: Object.keys(screenData || {}),
+      dataSize: JSON.stringify(screenData).length
+    });
+    
+    console.log('🔍 [DEBUG] 전체 screenData 내용:', screenData);
+    
+    // AdminPanel이 기대하는 형식으로 데이터를 정규화
+    const normalizedScreenData = {
+      ...screenData,
+      // AdminPanel이 selectedProblem.id와 selectedProblem.title을 기대하므로 
+      // 필요시 정규화하여 전송
+      selectedProblem: screenData.selectedProblem && typeof screenData.selectedProblem === 'object' 
+        ? screenData.selectedProblem 
+        : screenData.selectedProblem && screenData.problemId 
+          ? { id: screenData.problemId, title: screenData.selectedProblem }
+          : screenData.selectedProblem
+    };
+    
+    // 📦 [API용 저장] 학생 화면 상태를 저장 (API 조회용)
+    studentScreens[screenData.studentId] = normalizedScreenData;
+    console.log('📦 studentScreens에 저장됨:', screenData.studentId, '-> 현재 저장된 학생 수:', Object.keys(studentScreens).length);
+    console.log('🔍 [DEBUG] 현재 studentScreens 키들:', Object.keys(studentScreens));
+    
+    try {
+      // 모든 관리자에게 학생 화면 상태 브로드캐스트
+      console.log('🔍 [DEBUG] broadcast.emit() 실행 시도 중...');
+      socket.broadcast.emit('studentScreenUpdate', normalizedScreenData);
+      console.log('✅ 관리자에게 화면 상태 브로드캐스트 완료');
+      console.log('🔍 [DEBUG] 브로드캐스트된 데이터:', {
+        studentId: normalizedScreenData.studentId,
+        studentName: normalizedScreenData.studentName,
+        problemTitle: normalizedScreenData.selectedProblem?.title
+      });
+    } catch (error) {
+      console.error('❌ [DEBUG] 브로드캐스트 에러:', error);
+    }
+  });
+
+  // 관리자가 특정 학생 화면 요청
+  socket.on('requestStudentScreen', (requestData) => {
+    console.log('👀 관리자가 학생 화면 요청:', requestData);
+    
+    try {
+      const shareRequest = {
+        studentId: requestData.studentId,
+        adminId: requestData.adminId
+      };
+      
+      // 모든 클라이언트에게 화면 공유 요청 전송 (관리자 제외)
+      console.log('📤 shareScreenRequest 브로드캐스트 전송:', shareRequest);
+      socket.broadcast.emit('shareScreenRequest', shareRequest);
+      
+      // 서버에 연결된 모든 소켓에도 직접 전송 (더 확실하게)
+      io.emit('shareScreenRequest', shareRequest);
+      console.log('✅ shareScreenRequest 전체 이벤트 전송 완료');
+    } catch (error) {
+      console.error('❌ requestStudentScreen 처리 중 오류:', error);
+    }
+  });
+
+  // 실행 버튼 방식으로 학생 화면 상태 강제 저장 요청
+  socket.on('forceStudentScreenSave', (data) => {
+    console.log('💾 [실행 버튼 방식] 학생 화면 상태 강제 저장 요청:', data);
+    
+    try {
+      const { studentId } = data;
+      
+      // 모든 클라이언트에게 브로드캐스트 (학생이 자신의 ID를 확인하여 응답)
+      io.emit('requestCurrentScreenSave', { studentId });
+      console.log('✅ [실행 버튼 방식] requestCurrentScreenSave 이벤트 브로드캐스트 완료:', studentId);
+      
+      // 추가 디버깅: 현재 연결된 소켓 수 확인
+      console.log('🔗 현재 연결된 소켓 수:', io.engine.clientsCount);
+      console.log('📡 브로드캐스트 대상 소켓들:', Array.from(io.sockets.sockets.keys()));
+    } catch (error) {
+      console.error('❌ forceStudentScreenSave 처리 중 오류:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('사용자가 연결을 해제했습니다:', socket.id);
+    
+    // 학생이 연결 해제 시 상태를 offline으로 업데이트
+    if (socket.studentId && socket.userType === 'student') {
+      // ⚠️ [수정됨] 소켓이 끊어져도 로그인된 학생은 연결된 상태로 유지
+      // connectedStudents Set에서 제거하지 않음 (로그아웃할 때만 제거)
+      console.log('🔌 소켓 연결 해제되었지만 학생은 로그인 상태 유지:', socket.studentId);
+      console.log('📊 현재 연결된 학생 수 (변경 없음):', connectedStudents.size);
+      
+      db.run('UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id = ?', 
+             ['offline', socket.studentId], (err) => {
+        if (err) {
+          console.error('학생 상태 업데이트 실패:', err.message);
+        } else {
+          console.log(`학생 ${socket.studentId} 상태를 offline으로 업데이트`);
+          // 모든 연결된 클라이언트에게 상태 변경 브로드캐스트
+          socket.broadcast.emit('studentStatusUpdated', { 
+            studentId: socket.studentId, 
+            status: 'offline' 
+          });
+        }
+      });
+    }
   });
 });
 
@@ -2613,7 +2986,7 @@ app.delete('/api/lessons/:id', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3008;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`네트워크 접근이 가능합니다: http://192.168.68.59:${PORT}`);

@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
-const AdminPanel = ({ user }) => {
+const AdminPanel = ({ user, studentScreens = {}, onRequestStudentScreen }) => {
+  // 🐛 DEBUG: studentScreens prop 변경 감지
+  console.log('🔍 [AdminPanel] studentScreens prop 업데이트:', studentScreens);
+  console.log('🔍 [AdminPanel] studentScreens 키들:', Object.keys(studentScreens));
+  
   const [students, setStudents] = useState([]);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // 🐛 DEBUG: studentScreens 변경 감지 useEffect
+  useEffect(() => {
+    console.log('🔄 [AdminPanel] useEffect - studentScreens 변경됨:', studentScreens);
+    console.log('🔄 [AdminPanel] useEffect - 키 개수:', Object.keys(studentScreens).length);
+    // 강제 리렌더링 트리거
+    setForceUpdate(prev => prev + 1);
+  }, [studentScreens]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentProgress, setStudentProgress] = useState([]);
   const [studentAssessments, setStudentAssessments] = useState([]);
@@ -137,6 +150,28 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const handleResetAllStudentStatus = async () => {
+    // eslint-disable-next-line no-restricted-globals
+    if (!confirm('모든 학생의 상태를 오프라인으로 초기화하시겠습니까?')) return;
+
+    try {
+      const response = await fetch('http://localhost:3001/api/admin/reset-student-status', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message || '모든 학생 상태가 초기화되었습니다.');
+        fetchStudents();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      alert('학생 상태 초기화 중 오류가 발생했습니다.');
+    }
+  };
+
   const renderStudentsTab = () => (
     <div>
       <h3>학생 관리</h3>
@@ -201,6 +236,24 @@ const AdminPanel = ({ user }) => {
         </form>
       </div>
 
+      {/* 학생 상태 관리 버튼 */}
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={handleResetAllStudentStatus}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          🔄 모든 학생 상태 초기화
+        </button>
+      </div>
+
       {/* 학생 목록 */}
       <div style={{ display: 'flex', gap: '20px' }}>
         <div style={{ flex: '1' }}>
@@ -226,7 +279,17 @@ const AdminPanel = ({ user }) => {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 'bold' }}>{student.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: 'bold' }}>{student.name}</div>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: student.status === 'online' ? '#10b981' : 
+                                     student.status === 'stuck' ? '#ef4444' : '#6b7280'
+                    }} />
+                    {student.status === 'online' && <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>🟢 온라인</span>}
+                  </div>
                   <div style={{ color: '#666', fontSize: '14px' }}>
                     {student.class_name && student.student_number ? 
                       `${student.class_name}반 ${student.student_number}번` : 
@@ -236,24 +299,87 @@ const AdminPanel = ({ user }) => {
                   <div style={{ color: '#888', fontSize: '12px' }}>
                     가입: {new Date(student.created_at).toLocaleDateString()}
                   </div>
+                  {studentScreens && studentScreens[student.id] && (
+                    <div style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>
+                      📺 {(() => {
+                        const screenData = studentScreens[student.id];
+                        const problem = screenData.selectedProblem;
+                        
+                        // 🐛 DEBUG: 화면 표시 디버깅
+                        console.log(`🖥️ [AdminPanel] 학생 ${student.id} 화면 표시:`, {
+                          screenData,
+                          problem,
+                          problemType: typeof problem,
+                          timestamp: screenData.timestamp
+                        });
+                        
+                        // 다양한 형식의 selectedProblem 데이터 처리
+                        if (problem) {
+                          if (typeof problem === 'object' && problem.id && problem.title) {
+                            // 정상적인 객체 형식
+                            console.log(`🖥️ [AdminPanel] 학생 ${student.id} -> 객체 형식: ${problem.id}: ${problem.title}`);
+                            return `문제 ${problem.id}: ${problem.title}`;
+                          } else if (typeof problem === 'string') {
+                            // 문자열 형식 (제목만)
+                            console.log(`🖥️ [AdminPanel] 학생 ${student.id} -> 문자열 형식: ${problem}`);
+                            return `문제: ${problem}`;
+                          } else if (typeof problem === 'object' && problem.title) {
+                            // 제목만 있는 객체
+                            console.log(`🖥️ [AdminPanel] 학생 ${student.id} -> title만 객체: ${problem.title}`);
+                            return `문제: ${problem.title}`;
+                          } else {
+                            // 기타 형식
+                            console.log(`🖥️ [AdminPanel] 학생 ${student.id} -> 기타 형식:`, problem);
+                            return `문제: ${problem}`;
+                          }
+                        } else {
+                          console.log(`🖥️ [AdminPanel] 학생 ${student.id} -> 대시보드`);
+                          return '대시보드';
+                        }
+                      })()}
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteStudent(student.id);
-                  }}
-                  style={{
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    border: 'none',
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  삭제
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onRequestStudentScreen) {
+                        onRequestStudentScreen(student.id);
+                      } else {
+                        alert('화면 보기 기능을 사용할 수 없습니다.');
+                      }
+                    }}
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    📺 학생화면 보기
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteStudent(student.id);
+                    }}
+                    style={{
+                      backgroundColor: '#f44336',
+                      color: 'white',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
               </div>
             ))}
           </div>

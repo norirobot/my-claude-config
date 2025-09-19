@@ -963,6 +963,8 @@ const CodingMentoringPlatform = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [studentScreens, setStudentScreens] = useState({});
+  const [showScreenShare, setShowScreenShare] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showEditStudent, setShowEditStudent] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -975,6 +977,7 @@ const CodingMentoringPlatform = () => {
   const [fontSize, setFontSize] = useState(14);
   const [submittingProblems, setSubmittingProblems] = useState(new Set());
   const [lastUpdateTime, setLastUpdateTime] = useState({});
+  const [screenTransmissionCounter, setScreenTransmissionCounter] = useState(0);
   const [lastUpdateContent, setLastUpdateContent] = useState({});
   const [helpRequests, setHelpRequests] = useState([]);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -1064,6 +1067,12 @@ const CodingMentoringPlatform = () => {
   // 첫 번째 문제 자동 선택 및 저장된 코드 불러오기 (무한 루프 방지)
   useEffect(() => {
     if (userType === 'student' && problems.length > 0 && user?.id && !selectedProblem) {
+      // ⚠️ localStorage에 저장된 문제가 있으면 자동 선택하지 않고 복원을 기다림
+      const savedProblem = localStorage.getItem(`student_${user.id}_selectedProblem`);
+      if (savedProblem) {
+        console.log('💾 저장된 문제가 있어서 첫 번째 문제 자동 선택 건너뜀');
+        return;
+      }
       const firstProblem = problems[0];
       setSelectedProblem(firstProblem);
       
@@ -1074,23 +1083,33 @@ const CodingMentoringPlatform = () => {
       // 2. 서버에서 저장된 코드 확인  
       const savedCode = problemStatus[firstProblem.id]?.code;
       
-      // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+      // ⭐ 제출한 적이 없는 문제만 스타터 코드 표시, 제출한 적이 있으면 점수 상관없이 제출 코드 표시
       const problemStars = problemStatus[firstProblem.id]?.stars || 0;
-      const isUnsolvedProblem = problemStars === 0;
+      const hasSubmitted = !!savedCode || !!localCode || !!problemStatus[firstProblem.id]?.lastSubmittedAt;
       
       let newCode;
-      if (isUnsolvedProblem) {
-        console.log('🌟 아직 풀지 않은 첫 번째 문제 - 스타터 코드만 표시:', { 
+      if (!hasSubmitted) {
+        console.log('📝 한 번도 제출하지 않은 첫 번째 문제 - 스타터 코드 표시:', { 
           problemId: firstProblem.id, 
           problemTitle: firstProblem.title,
-          stars: problemStars 
+          stars: problemStars,
+          hasLocalCode: !!localCode,
+          hasSavedCode: !!savedCode,
+          hasSubmissionRecord: !!problemStatus[firstProblem.id]?.lastSubmittedAt
         });
         newCode = firstProblem.starterCode || '';
       } else {
-        // 이미 풀어본 문제는 기존 로직대로 진행
-        // 3. 우선순위: localStorage 코드가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
-        const hasValidLocalCode = localCode && localCode.trim() !== '' && localCode.trim().length > 10; // 최소 10자 이상
-        const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10; // 최소 10자 이상  
+        console.log('🔄 제출한 적이 있는 첫 번째 문제 - 제출 코드 복원:', { 
+          problemId: firstProblem.id, 
+          problemTitle: firstProblem.title,
+          stars: problemStars,
+          hasLocalCode: !!localCode,
+          hasSavedCode: !!savedCode,
+          hasSubmissionRecord: !!problemStatus[firstProblem.id]?.lastSubmittedAt
+        });
+        // 제출한 적이 있으면 로컬 코드 우선, 없으면 서버 코드, 없으면 스타터 코드
+        const hasValidLocalCode = localCode && localCode.trim() !== '' && localCode.trim().length > 10;
+        const hasValidSavedCode = savedCode && savedCode.trim() !== '' && savedCode.trim().length > 10;  
         newCode = (hasValidLocalCode ? localCode : (hasValidSavedCode ? savedCode : firstProblem.starterCode)) || '';
       }
       
@@ -1098,7 +1117,7 @@ const CodingMentoringPlatform = () => {
         problemId: firstProblem.id,
         problemTitle: firstProblem.title,
         별점수: problemStars,
-        미해결문제: isUnsolvedProblem,
+        제출여부: hasSubmitted,
         hasLocalCode: !!localCode,
         localCode: localCode?.substring(0, 50) + '...',
         hasSavedCode: !!savedCode,
@@ -1117,7 +1136,7 @@ const CodingMentoringPlatform = () => {
     }
   }, [problems, userType, selectedProblem, isRestoringState]);
 
-  // 페이지 떠나기 전 코드 저장 (로컬스토리지 + 서버)
+  // 페이지 떠나기 전 코드 저장 및 로그아웃 처리
   useEffect(() => {
     const handleBeforeUnload = () => {
       // 페이지 종료 전 자동 저장
@@ -1127,6 +1146,16 @@ const CodingMentoringPlatform = () => {
         const storageKey = `student_${user.id}_problem_${selectedProblem.id}_code`;
         localStorage.setItem(storageKey, code);
         updateCode(code, false); // 서버에도 저장
+      }
+      
+      // 학생이 페이지를 떠날 때 로그아웃 처리
+      if (userType === 'student' && user && socket && socket.connected) {
+        console.log('🚪 페이지 종료 전 로그아웃 처리:', user.id);
+        socket.emit('studentLogout', { 
+          studentId: user.id,
+          studentName: user.name,
+          reason: 'pageUnload'
+        });
       }
     };
 
@@ -1339,7 +1368,11 @@ const CodingMentoringPlatform = () => {
       console.log('프론트엔드에서 전송하는 문제 수정 데이터:', problemData);
       await axios.put(`${API_BASE_URL}/problems/${problemId}`, problemData);
       loadAdminProblems(currentLesson); // 새로고침
-      alert('문제가 성공적으로 수정되었습니다.');
+      
+      // 수정된 문제 정보 표시 
+      const problemNumber = problemData.number || problemId;
+      const problemTitle = problemData.title || `문제 ${problemNumber}`;
+      alert(`문제 수정이 완료되었습니다! ✅\n\n📝 수정된 문제: ${problemNumber}번 - ${problemTitle}`);
     } catch (error) {
       console.error('문제 수정 실패:', error);
       alert('문제 수정에 실패했습니다.');
@@ -1710,6 +1743,18 @@ const CodingMentoringPlatform = () => {
         timestamp: new Date().toISOString()
       });
       
+      // 사용자 식별 정보를 서버에 전송
+      if (user?.id && userType) {
+        console.log('🔍 서버에 사용자 식별 정보 전송:', {
+          studentId: user.id,
+          userType: userType
+        });
+        socket.emit('identify', {
+          studentId: user.id,
+          userType: userType
+        });
+      }
+      
       if (userType === 'student' && user?.id) {
         console.log('📋 소켓 연결 시 실시간 메시지 다시 로드');
         loadLiveMessages(user.id);
@@ -1848,27 +1893,252 @@ const CodingMentoringPlatform = () => {
 
     // 학생 코드 변경 수신 이벤트 리스너 (멘토용)
     socket.on('studentCodeChange', (codeData) => {
-      console.log('📡 학생 코드 변경 수신:', codeData);
+      console.log('📡 학생 코드 변경 수신:', {
+        studentId: codeData.studentId,
+        codeLength: codeData.code?.length,
+        timestamp: codeData.timestamp
+      });
       
       if (userType === 'admin') {
+        console.log('🔍 관리자 모드에서 학생 코드 변경 처리 중...');
+        console.log('📋 현재 선택된 학생:', selectedStudent?.id, selectedStudent?.name);
+        console.log('📋 코드 변경 대상 학생:', codeData.studentId);
+        
         // 현재 선택된 학생의 코드가 변경된 경우
         if (selectedStudent && selectedStudent.id === codeData.studentId) {
-          console.log('✅ 현재 선택된 학생의 코드 업데이트:', codeData.code);
+          console.log('✅ 현재 선택된 학생의 코드 실시간 업데이트!');
+          console.log('📝 이전 코드 길이:', selectedStudent.code?.length || 0);
+          console.log('📝 새 코드 길이:', codeData.code?.length || 0);
           
           // selectedStudent의 코드 업데이트
-          setSelectedStudent(prev => ({ ...prev, code: codeData.code }));
+          setSelectedStudent(prev => ({ 
+            ...prev, 
+            code: codeData.code,
+            lastUpdated: new Date().toISOString()
+          }));
           
           // students 배열에서도 업데이트
           setStudents(prevStudents => 
             prevStudents.map(student => 
               student.id === codeData.studentId 
-                ? { ...student, code: codeData.code }
+                ? { ...student, code: codeData.code, lastUpdated: new Date().toISOString() }
                 : student
             )
           );
+          
+          console.log('🎯 학생 코드 상태 업데이트 완료!');
+        } else {
+          console.log('ℹ️ 다른 학생의 코드 변경이므로 무시됨');
         }
       }
     });
+
+    // 학생 상태 업데이트 수신 (관리자용)
+    socket.on('studentStatusUpdated', (statusData) => {
+      console.log('📡 학생 상태 업데이트 수신:', statusData);
+      
+      if (userType === 'admin') {
+        console.log('🔄 관리자 화면에서 학생 상태 업데이트 처리');
+        
+        // students 배열에서 해당 학생 상태 업데이트
+        setStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.id === statusData.studentId 
+              ? { ...student, status: statusData.status, lastActive: new Date().toISOString() }
+              : student
+          )
+        );
+        
+        console.log(`✅ 학생 ${statusData.studentId} 상태를 ${statusData.status}로 업데이트 완료`);
+      }
+    });
+
+    // 모든 학생 상태 리셋 이벤트 처리 (관리자용)
+    socket.on('allStudentsStatusReset', (resetData) => {
+      console.log('🔄 모든 학생 상태 리셋 수신:', resetData);
+      
+      if (userType === 'admin') {
+        console.log('🔄 관리자 화면에서 학생 상태를 스마트 업데이트');
+        console.log('🟢 온라인 유지할 학생 ID들:', resetData.onlineStudentIds);
+        
+        // 스마트 학생 상태 업데이트: 온라인 유지 목록에 없는 학생만 offline으로
+        setStudents(prevStudents => 
+          prevStudents.map(student => {
+            const shouldStayOnline = resetData.onlineStudentIds?.includes(student.id);
+            return {
+              ...student, 
+              status: shouldStayOnline ? 'online' : 'offline', 
+              lastActive: resetData.timestamp 
+            };
+          })
+        );
+        
+        // studentScreens도 스마트 업데이트: 온라인 유지 학생들은 그대로 두기
+        setStudentScreens(prevScreens => {
+          const newScreens = { ...prevScreens };
+          
+          // 오프라인된 학생들의 화면 정보만 제거
+          Object.keys(newScreens).forEach(studentId => {
+            const id = parseInt(studentId);
+            if (!resetData.onlineStudentIds?.includes(id)) {
+              delete newScreens[studentId];
+            }
+          });
+          
+          console.log('📱 화면 공유 상태 업데이트 완료:', Object.keys(newScreens));
+          return newScreens;
+        });
+        
+        console.log('✅ 스마트 학생 상태 업데이트 완료');
+        console.log('📢 상태 업데이트 결과:', resetData.message || '학생 상태가 업데이트되었습니다.');
+      }
+    });
+
+    // 학생 화면 상태 업데이트 수신 (관리자용)
+    socket.on('studentScreenUpdate', (screenData) => {
+      console.log('📺 [실시간] 학생 화면 상태 업데이트 수신:', screenData);
+      console.log('📺 selectedProblem 타입:', typeof screenData.selectedProblem);
+      console.log('📺 selectedProblem 내용:', screenData.selectedProblem);
+      console.log('📺 현재 userType:', userType);
+      console.log('📺 userType === admin 체크:', userType === 'admin');
+      
+      if (userType === 'admin') {
+        console.log('📺 [실시간] 관리자 조건 통과, setStudentScreens 호출');
+        // 전송 순서 번호 증가
+        setScreenTransmissionCounter(prevCounter => {
+          const newCounter = prevCounter + 1;
+          // 서버와 동일한 구조로 데이터 저장 (API와 일치) + 순서 번호 추가
+          setStudentScreens(prev => {
+            console.log('📺 [실시간] 이전 studentScreens:', prev);
+            console.log('📺 [실시간] 이전과 현재 데이터 비교:', {
+              이전타임스탬프: prev[screenData.studentId]?.timestamp,
+              현재타임스탬프: screenData.timestamp,
+              같음: prev[screenData.studentId]?.timestamp === screenData.timestamp
+            });
+            
+            const newScreens = {
+              ...prev,
+              [screenData.studentId]: {
+                ...screenData, // 서버에서 정규화된 전체 데이터 저장
+                transmissionOrder: newCounter // 전송 순서 번호 추가
+              }
+            };
+            console.log('📺 [실시간] 업데이트된 studentScreens:', newScreens);
+            console.log('📺 [실시간] 학생', screenData.studentId, '화면:', screenData.selectedProblem?.title || screenData.selectedProblem);
+            console.log('📺 [실시간] 전송 순서:', newCounter);
+            console.log('📺 [실시간] 참조 비교:', prev === newScreens, '내용 비교:', JSON.stringify(prev) === JSON.stringify(newScreens));
+            return newScreens;
+          });
+          return newCounter;
+        });
+      } else {
+        console.log('📺 [실시간] 관리자가 아니므로 화면 상태 업데이트 건너뜀');
+      }
+    });
+
+    // 화면 공유 요청 수신 (학생용)
+    socket.on('shareScreenRequest', (requestData) => {
+      console.log('📨 shareScreenRequest 수신:', requestData);
+      console.log('🔍 현재 사용자 정보:', { userType, userId: user?.id, userName: user?.name });
+      console.log('🎯 요청 대상 학생 ID:', requestData.studentId);
+      console.log('💡 조건 확인:', { 
+        isStudent: userType === 'student',
+        userExists: !!user?.id,
+        isTargetStudent: user?.id === requestData.studentId 
+      });
+      
+      if (userType === 'student' && user?.id === requestData.studentId) {
+        console.log('✅ 조건 일치! 화면 공유 처리 시작');
+        // 더 정확한 현재 상태 감지
+        const currentProblemElement = document.querySelector('.problem-title, [data-problem-id]');
+        const isProblemView = currentProblemElement || selectedProblem;
+        const currentScreen = isProblemView ? 'problem' : 'dashboard';
+        
+        // DOM에서 문제 정보 추출 시도
+        let detectedProblem = selectedProblem;
+        if (!detectedProblem && currentProblemElement) {
+          const problemIdElement = document.querySelector('[data-problem-id]');
+          if (problemIdElement) {
+            const problemId = problemIdElement.getAttribute('data-problem-id');
+            const problemTitle = currentProblemElement.textContent;
+            detectedProblem = {
+              id: parseInt(problemId),
+              title: problemTitle
+            };
+          }
+        }
+        
+        // 현재 화면 상태를 관리자에게 전송
+        const currentScreenData = {
+          studentId: user.id,
+          studentName: user.name,
+          currentScreen: currentScreen,
+          selectedProblem: detectedProblem,
+          currentLesson: currentLesson,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('📺 [요청시] 개선된 화면 공유 응답:', {
+          ...currentScreenData,
+          detectionMethod: detectedProblem === selectedProblem ? 'state' : 'dom',
+          domFound: !!currentProblemElement
+        });
+        socket.emit('studentScreenUpdate', currentScreenData);
+      }
+    });
+
+    // 실행 버튼 방식: 관리자가 현재 화면 상태 저장 요청
+    socket.on('requestCurrentScreenSave', (data) => {
+      console.log('💾 [실행 버튼 방식] 현재 화면 상태 저장 요청 수신:', data);
+      
+      if (userType === 'student' && user?.id === data.studentId) {
+        console.log('✅ [실행 버튼 방식] 조건 일치! 현재 화면 상태를 서버에 저장');
+        
+        // 현재 화면 상태 데이터
+        const currentScreenData = {
+          studentId: user.id,
+          studentName: user.name,
+          currentScreen: selectedProblem ? 'problem' : 'dashboard',
+          selectedProblem: selectedProblem,
+          code: code,
+          currentLesson: currentLesson,
+          timestamp: new Date().toISOString()
+        };
+        
+        // 🔄 [수정됨] updateCode 대신 studentScreenUpdate 이벤트로 화면 상태 저장
+        console.log('📺 [실행 버튼 방식] studentScreenUpdate 이벤트로 현재 상태 전송');
+        socket.emit('studentScreenUpdate', currentScreenData);
+        
+        // 추가로 코드도 저장 (기존 실행 버튼 호환성)
+        if (selectedProblem) {
+          console.log('💾 [추가] updateCode로 코드만 별도 저장');
+          socket.emit('updateCode', {
+            studentId: user.id,
+            code: code,
+            problemId: selectedProblem.id
+          });
+        }
+        
+        console.log('✅ [실행 버튼 방식] 현재 화면 상태 저장 완료:', currentScreenData);
+      }
+    });
+
+    // 학생 소켓 연결 시 초기 화면 상태 전송
+    if (userType === 'student' && user && selectedProblem) {
+      setTimeout(() => {
+        const initialScreenData = {
+          studentId: user.id,
+          studentName: user.name,
+          currentScreen: selectedProblem ? 'problem' : 'dashboard',
+          selectedProblem: selectedProblem,
+          currentLesson: currentLesson,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('📺 [초기] 소켓 연결시 화면 상태 전송:', initialScreenData);
+        socket.emit('studentScreenUpdate', initialScreenData);
+      }, 1000);
+    }
 
     return () => {
       socket.off('connect');
@@ -1877,11 +2147,16 @@ const CodingMentoringPlatform = () => {
       socket.off('helpCompleted');
       socket.off('problemUpdated');
       socket.off('studentCodeUpdate');
+      socket.off('studentCodeChange');
+      socket.off('studentStatusUpdated');
       socket.off('lessonUpdated');
       socket.off('feedbackReceived');
       socket.off('liveMessage');
       socket.off('codeModification');
       socket.off('connectionTestResponse');
+      socket.off('studentScreenUpdate');
+      socket.off('shareScreenRequest');
+      socket.off('allStudentsStatusReset');
       clearInterval(connectionCheckInterval);
     };
   }, [selectedStudent, userType, currentLesson]);
@@ -1915,9 +2190,8 @@ const CodingMentoringPlatform = () => {
         }, 500);
       }
       
-      // 선택된 문제 복원 (문제 로드 후)
-      setTimeout(() => {
-        const savedProblem = localStorage.getItem(`student_${user.id}_selectedProblem`);
+      // 선택된 문제 복원 (문제 로드 후) - 즉시 실행
+      const savedProblem = localStorage.getItem(`student_${user.id}_selectedProblem`);
         if (savedProblem) {
           try {
             const problemData = JSON.parse(savedProblem);
@@ -1925,46 +2199,54 @@ const CodingMentoringPlatform = () => {
             setSelectedProblem(problemData);
             
             // 문제 복원 후 해당 문제의 코드도 로드
-            setTimeout(() => {
-              console.log('📝 복원된 문제의 코드 로드 시도');
-              const storageKey = `student_${user.id}_problem_${problemData.id}_code`;
-              const localStorageCode = localStorage.getItem(storageKey);
+            console.log('📝 복원된 문제의 코드 로드 시도');
+            const storageKey = `student_${user.id}_problem_${problemData.id}_code`;
+            const localStorageCode = localStorage.getItem(storageKey);
               
-              // problemStatus에서 서버 데이터 확인
-              const serverCode = problemStatus[problemData.id]?.code;
-              
-              // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
-              const problemStars = problemStatus[problemData.id]?.stars || 0;
-              const isUnsolvedProblem = problemStars === 0;
-              
-              let codeToLoad;
-              if (isUnsolvedProblem) {
-                console.log('🌟 아직 풀지 않은 문제 복원 - 스타터 코드만 표시:', { 
-                  problemId: problemData.id, 
-                  problemTitle: problemData.title,
-                  stars: problemStars 
-                });
-                codeToLoad = problemData.starterCode || '';
-              } else {
-                // 이미 풀어본 문제는 기존 로직대로 진행
-                // 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
-                codeToLoad = serverCode || localStorageCode || problemData.starterCode || '';
-              }
-              
-              console.log('📝 로드할 코드:', { 
-                서버코드: !!serverCode, 
-                로컬코드: !!localStorageCode, 
-                스타터코드: !!problemData.starterCode,
-                별점수: problemStars,
-                미해결문제: isUnsolvedProblem,
-                최종코드길이: codeToLoad.length 
+            // problemStatus에서 서버 데이터 확인
+            const serverCode = problemStatus[problemData.id]?.code;
+            
+            // ⭐ 제출한 적이 없는 문제만 스타터 코드 표시, 제출한 적이 있으면 점수 상관없이 제출 코드 표시
+            const problemStars = problemStatus[problemData.id]?.stars || 0;
+            const hasSubmitted = !!serverCode || !!localStorageCode || !!problemStatus[problemData.id]?.lastSubmittedAt;
+            
+            let codeToLoad;
+            if (!hasSubmitted) {
+              console.log('📝 한 번도 제출하지 않은 문제 - 스타터 코드 표시:', { 
+                problemId: problemData.id, 
+                problemTitle: problemData.title,
+                stars: problemStars,
+                hasServerCode: !!serverCode,
+                hasLocalCode: !!localStorageCode,
+                hasSubmissionRecord: !!problemStatus[problemData.id]?.lastSubmittedAt
               });
-              
-              if (codeToLoad) {
-                setCode(codeToLoad);
-              }
-              setIsRestoringState(false); // 항상 복원 완료 처리
-            }, 100);
+              codeToLoad = problemData.starterCode || '';
+            } else {
+              console.log('🔄 제출한 적이 있는 문제 - 제출 코드 복원:', { 
+                problemId: problemData.id, 
+                problemTitle: problemData.title,
+                stars: problemStars,
+                hasServerCode: !!serverCode,
+                hasLocalCode: !!localStorageCode,
+                hasSubmissionRecord: !!problemStatus[problemData.id]?.lastSubmittedAt
+              });
+              // 제출한 적이 있으면 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
+              codeToLoad = serverCode || localStorageCode || problemData.starterCode || '';
+            }
+            
+            console.log('📝 로드할 코드:', { 
+              서버코드: !!serverCode, 
+              로컬코드: !!localStorageCode, 
+              스타터코드: !!problemData.starterCode,
+              별점수: problemStars,
+              제출여부: hasSubmitted,
+              최종코드길이: codeToLoad.length 
+            });
+            
+            if (codeToLoad) {
+              setCode(codeToLoad);
+            }
+            setIsRestoringState(false); // 항상 복원 완료 처리
           } catch (e) {
             console.warn('❌ 저장된 문제 데이터 파싱 실패:', e);
             setIsRestoringState(false); // 파싱 실패 시에도 상태 해제
@@ -1976,8 +2258,7 @@ const CodingMentoringPlatform = () => {
             setIsRestoringState(false);
           }, 400);
         }
-      }, 300); // 시간을 더 늘림 (problemStatus 로드 대기)
-    }
+    } // localStorage 복원 로직 종료 
   }, [user?.id, userType]);
 
   // problemStatus가 로드된 후 선택된 문제의 코드 복원
@@ -1989,21 +2270,31 @@ const CodingMentoringPlatform = () => {
       const localStorageCode = localStorage.getItem(storageKey);
       const serverCode = problemStatus[selectedProblem.id]?.code;
       
-      // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+      // ⭐ 제출한 적이 없는 문제만 스타터 코드 표시, 제출한 적이 있으면 점수 상관없이 제출 코드 표시
       const problemStars = problemStatus[selectedProblem.id]?.stars || 0;
-      const isUnsolvedProblem = problemStars === 0;
+      const hasSubmitted = !!serverCode || !!localStorageCode || !!problemStatus[selectedProblem.id]?.lastSubmittedAt;
       
       let codeToLoad;
-      if (isUnsolvedProblem) {
-        console.log('🌟 아직 풀지 않은 문제 복원 - 스타터 코드만 표시:', { 
+      if (!hasSubmitted) {
+        console.log('📝 한 번도 제출하지 않은 문제 - 스타터 코드 표시:', { 
           problemId: selectedProblem.id, 
           problemTitle: selectedProblem.title,
-          stars: problemStars 
+          stars: problemStars,
+          hasServerCode: !!serverCode,
+          hasLocalCode: !!localStorageCode,
+          hasSubmissionRecord: !!problemStatus[selectedProblem.id]?.lastSubmittedAt
         });
         codeToLoad = selectedProblem.starterCode || '';
       } else {
-        // 이미 풀어본 문제는 기존 로직대로 진행
-        // 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
+        console.log('🔄 제출한 적이 있는 문제 - 제출 코드 복원:', { 
+          problemId: selectedProblem.id, 
+          problemTitle: selectedProblem.title,
+          stars: problemStars,
+          hasServerCode: !!serverCode,
+          hasLocalCode: !!localStorageCode,
+          hasSubmissionRecord: !!problemStatus[selectedProblem.id]?.lastSubmittedAt
+        });
+        // 제출한 적이 있으면 서버 코드 우선, 없으면 localStorage, 없으면 스타터 코드
         codeToLoad = serverCode || localStorageCode || selectedProblem.starterCode || '';
       }
       
@@ -2011,7 +2302,7 @@ const CodingMentoringPlatform = () => {
         문제ID: selectedProblem.id,
         문제제목: selectedProblem.title,
         별점수: problemStars,
-        미해결문제: isUnsolvedProblem,
+        제출여부: hasSubmitted,
         서버코드존재: !!serverCode, 
         서버코드내용: serverCode ? serverCode.substring(0, 50) + '...' : 'null',
         로컬코드존재: !!localStorageCode, 
@@ -2125,6 +2416,7 @@ const CodingMentoringPlatform = () => {
       
       if (response.data.success) {
         console.log('✅ 로그인 성공:', response.data);
+        console.log('🔧 [DEBUG] 로그인 후 소켓 상태:', { socket: !!socket, connected: socket?.connected });
         setUser(response.data.user);
         setUserType(response.data.type);
         setIsLoggedIn(true);
@@ -2133,6 +2425,130 @@ const CodingMentoringPlatform = () => {
         localStorage.setItem('userType', response.data.type);
         
         console.log('설정된 사용자 정보:', { user: response.data.user, type: response.data.type });
+        console.log('🚨 [CRITICAL TEST] HTTP API 방식 학생 식별 시스템 활성화!');
+        
+        // 로그인 후 소켓 식별 정보 전송 (연결이 확실해질 때까지 재시도)
+        const sendIdentifyWithRetry = (userData, userTypeData, attempt = 1) => {
+          console.log(`🔄 [로그인 후] identify 전송 시도 ${attempt}번째:`, {
+            socketExists: !!socket,
+            socketConnected: socket?.connected,
+            userId: userData?.id,
+            userType: userTypeData,
+            isAdmin: userTypeData === 'admin'
+          });
+          
+          // 소켓이 없거나 연결되지 않은 경우 재연결 시도
+          if (!socket || !socket.connected) {
+            console.log('🔌 [로그인 후] 소켓이 연결되지 않음, 재연결 시도 중...');
+            // 소켓 강제 재초기화
+            socket = initializeSocket();
+            
+            // 새 소켓 연결 대기
+            if (socket) {
+              socket.on('connect', () => {
+                console.log('🎉 [로그인 후] 소켓 연결 성공, identify 전송!');
+                // 관리자는 adminId 사용, 학생은 studentId 사용
+                if (userTypeData === 'admin') {
+                  console.log('🔍 [관리자 로그인] 서버에 관리자 식별 정보 전송:', {
+                    adminId: userData?.username || userData?.id || 'admin',
+                    userType: userTypeData
+                  });
+                  socket.emit('identify', {
+                    adminId: userData?.username || userData?.id || 'admin',
+                    userType: userTypeData
+                  });
+                  console.log('✅ [관리자 로그인] identify 이벤트 전송 완료');
+                } else if (userData?.id && userTypeData) {
+                  console.log('🔍 [학생 로그인] 서버에 학생 식별 정보 전송:', {
+                    studentId: userData.id,
+                    userType: userTypeData
+                  });
+                  socket.emit('identify', {
+                    studentId: userData.id,
+                    userType: userTypeData
+                  });
+                  console.log('✅ [학생 로그인] identify 이벤트 전송 완료');
+                }
+              });
+            }
+            
+            if (attempt < 20) { // 재연결을 위해 시도 횟수를 증가
+              setTimeout(() => sendIdentifyWithRetry(userData, userTypeData, attempt + 1), 1000);
+              return;
+            }
+          }
+          
+          // 관리자 식별 처리
+          if (socket?.connected && userTypeData === 'admin') {
+            console.log('🔍 [관리자 로그인] 서버에 관리자 식별 정보 전송:', {
+              adminId: userData?.username || userData?.id || 'admin',
+              userType: userTypeData
+            });
+            socket.emit('identify', {
+              adminId: userData?.username || userData?.id || 'admin',
+              userType: userTypeData
+            });
+            console.log('✅ [관리자 로그인] identify 이벤트 전송 완료');
+          } 
+          // 학생 식별 처리  
+          else if (socket?.connected && userData?.id && userTypeData) {
+            console.log('🔍 [학생 로그인] 서버에 학생 식별 정보 전송:', {
+              studentId: userData.id,
+              userType: userTypeData
+            });
+            socket.emit('identify', {
+              studentId: userData.id,
+              userType: userTypeData
+            });
+            console.log('✅ [학생 로그인] identify 이벤트 전송 완료');
+          } 
+          // 재시도 로직
+          else if (attempt < 20) {
+            // 최대 20번까지 재시도 (총 10초간)
+            setTimeout(() => sendIdentifyWithRetry(userData, userTypeData, attempt + 1), 500);
+          } else {
+            console.error('❌ [로그인 후] identify 전송 실패 - 최대 재시도 횟수 초과');
+          }
+        };
+        
+        // 로그인 후 HTTP API를 통한 학생 식별 (더 확실한 방법)
+        const sendIdentifyViaAPI = async (userData, userTypeData) => {
+          try {
+            console.log('🔍 [HTTP API] 서버에 학생 식별 정보 전송:', {
+              studentId: userData.id,
+              userType: userTypeData
+            });
+            
+            const identifyResponse = await fetch(`${API_BASE_URL}/identify-student`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                studentId: userData.id,
+                userType: userTypeData
+              })
+            });
+            
+            const identifyData = await identifyResponse.json();
+            if (identifyData.success) {
+              console.log('✅ [HTTP API] 학생 식별 성공:', identifyData.message);
+            } else {
+              console.error('❌ [HTTP API] 학생 식별 실패:', identifyData.message);
+            }
+          } catch (error) {
+            console.error('❌ [HTTP API] 학생 식별 API 호출 실패:', error);
+          }
+        };
+        
+        // 로그인 성공 직후 HTTP API를 통한 학생 식별
+        if (response.data.type === 'student') {
+          sendIdentifyViaAPI(response.data.user, response.data.type);
+        }
+        
+        // 기존 소켓 방식도 병행 (백업용)
+        sendIdentifyWithRetry(response.data.user, response.data.type);
         
         if (response.data.type === 'admin') {
           loadStudents();
@@ -2168,6 +2584,21 @@ const CodingMentoringPlatform = () => {
 
   // 로그아웃
   const handleLogout = () => {
+    console.log('🚪 로그아웃 시작:', { userId: user?.id, userType });
+    
+    // 학생이 로그아웃할 때 서버에 상태 업데이트 요청
+    if (userType === 'student' && user && socket && socket.connected) {
+      console.log('📤 학생 로그아웃 상태를 서버에 전송');
+      socket.emit('studentLogout', { 
+        studentId: user.id,
+        studentName: user.name 
+      });
+      
+      // 소켓 연결 해제
+      socket.disconnect();
+      console.log('🔌 소켓 연결 해제됨');
+    }
+    
     setIsLoggedIn(false);
     setUser(null);
     setUserType(null);
@@ -2175,6 +2606,167 @@ const CodingMentoringPlatform = () => {
     setSelectedStudent(null);
     localStorage.removeItem('user');
     localStorage.removeItem('userType');
+    
+    console.log('✅ 로그아웃 완료');
+  };
+
+  // 모든 학생 상태를 offline으로 초기화
+  const resetAllStudentStatus = async () => {
+    // eslint-disable-next-line no-restricted-globals
+    if (!confirm('모든 학생의 상태를 offline으로 변경하시겠습니까?')) {
+      return;
+    }
+    
+    try {
+      console.log('🔄 모든 학생 상태 초기화 요청 전송');
+      const response = await fetch(`${API_BASE_URL}/admin/reset-student-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        console.log('✅ 학생 상태 초기화 성공:', result.message);
+        alert(result.message);
+      } else {
+        console.error('❌ 학생 상태 초기화 실패:', result.error);
+        alert('상태 초기화에 실패했습니다: ' + result.error);
+      }
+    } catch (error) {
+      console.error('❌ 학생 상태 초기화 오류:', error);
+      alert('상태 초기화 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 학생 화면 상태 업데이트 전송 (개선된 버전)
+  const sendStudentScreenUpdate = useCallback((screenType, extraData = {}) => {
+    if (userType === 'student' && user && socket?.connected) {
+      const screenData = {
+        studentId: user.id,
+        studentName: user.name,
+        currentScreen: screenType,
+        selectedProblem: selectedProblem || extraData.selectedProblem,
+        currentLesson: currentLesson,
+        timestamp: new Date().toISOString(),
+        ...extraData
+      };
+      
+      console.log('📺 [자동] 학생 화면 상태 전송:', screenData);
+      socket.emit('studentScreenUpdate', screenData);
+    }
+  }, [userType, user, socket, selectedProblem, currentLesson]);
+
+  // 학생 상태 자동 전송 (문제 변경 시)
+  useEffect(() => {
+    if (userType === 'student' && user && socket?.connected && selectedProblem) {
+      const screenData = {
+        studentId: user.id,
+        studentName: user.name,
+        currentScreen: 'problem',
+        selectedProblem: selectedProblem,
+        code: code, // 🔄 [수정됨] 현재 코드도 포함
+        currentLesson: currentLesson,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('📺 [자동] 문제 변경시 화면 상태 전송 (코드 포함):', screenData);
+      socket.emit('studentScreenUpdate', screenData);
+    }
+  }, [selectedProblem, userType, user, socket, currentLesson, code]);
+
+  // 관리자가 학생 화면 보기 요청 (직접 API 방식)
+  const requestStudentScreen = async (studentId) => {
+    if (userType === 'admin' && user) {
+      console.log('👀 [실행 버튼 방식] 학생 화면 보기 요청:', studentId);
+      
+      try {
+        // 1단계: 학생에게 현재 화면 상태를 서버에 저장하도록 요청
+        console.log('📡 학생에게 현재 화면 상태 저장 요청:', studentId);
+        if (socket && socket.connected) {
+          socket.emit('forceStudentScreenSave', { studentId });
+        }
+        
+        // 2단계: 여러 번 시도하여 최신 데이터 가져오기
+        let attempts = 0;
+        const maxAttempts = 3;
+        const attemptDelay = 300; // 0.3초
+        
+        const fetchLatestScreen = async () => {
+          attempts++;
+          console.log(`🔄 [실행 버튼 방식] API 호출 시도 ${attempts}/${maxAttempts}`);
+          
+          try {
+            const response = await fetch(`${API_BASE_URL}/admin/student/${studentId}/current-screen`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.screenData) {
+              console.log('✅ [실행 버튼 방식] 학생 화면 상태 수신:', data.screenData);
+              
+              // 받은 화면 상태를 studentScreens에 즉시 적용
+              setStudentScreens(prev => ({
+                ...prev,
+                [studentId]: data.screenData
+              }));
+              
+              // selectedProblem이 객체인 경우 title 추출
+              const problemTitle = data.screenData.selectedProblem?.title || 
+                                  data.screenData.selectedProblem || 
+                                  '대시보드';
+              
+              alert(`📺 ${data.screenData.studentName || '학생'}의 화면 상태를 확인했습니다!\n현재 화면: ${problemTitle}`);
+              return; // 성공하면 종료
+            } 
+          } catch (error) {
+            console.error(`❌ [실행 버튼 방식] API 호출 ${attempts} 실패:`, error);
+          }
+          
+          // 실패했고 재시도 가능한 경우
+          if (attempts < maxAttempts) {
+            console.log(`⏳ ${attemptDelay}ms 후 재시도...`);
+            setTimeout(fetchLatestScreen, attemptDelay);
+          } else {
+            console.log('⚠️ [실행 버튼 방식] 모든 시도 실패');
+            alert('해당 학생이 현재 온라인이 아니거나 문제를 선택하지 않았습니다.');
+          }
+        };
+        
+        // 첫 시도는 즉시 실행
+        setTimeout(fetchLatestScreen, 200);
+        
+      } catch (error) {
+        console.error('❌ [실행 버튼 방식] 학생 화면 상태 조회 실패:', error);
+        alert('학생 화면 상태를 가져오는 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  // 코드 초기화 (스타터 코드로 복원)
+  const resetCode = () => {
+    if (selectedProblem && selectedProblem.starterCode) {
+      console.log('🔄 코드 초기화 실행:', { 
+        problemId: selectedProblem.id, 
+        problemTitle: selectedProblem.title,
+        starterCode: selectedProblem.starterCode?.substring(0, 50) + '...'
+      });
+      setCode(selectedProblem.starterCode);
+      
+      // localStorage에서도 초기화된 코드 저장
+      if (user?.id) {
+        const storageKey = `student_${user.id}_problem_${selectedProblem.id}_code`;
+        localStorage.setItem(storageKey, selectedProblem.starterCode);
+      }
+    } else {
+      console.log('⚠️ 초기화 실패: 선택된 문제나 스타터 코드가 없음');
+      alert('초기화할 스타터 코드가 없습니다.');
+    }
   };
 
   // 코드 실행 (scanf 입력 지원)
@@ -2340,6 +2932,76 @@ const CodingMentoringPlatform = () => {
       setOutput(`실행 오류: ${error.response?.data?.error || error.message}`);
     } finally {
       setIsRunning(false);
+      
+      // 🔄 학생이 실행 버튼을 눌렀을 때 자동으로 화면 상태 전송 (기존 기능 복구)
+      if (userType === 'student' && user && selectedProblem) {
+        const currentScreenData = {
+          studentId: user.id,
+          studentName: user.name,
+          selectedProblem: selectedProblem,
+          code: code,
+          currentLesson: currentLesson,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('🔍 [DEBUG] runCode finally block - 화면 상태 전송 시도');
+        console.log('🔍 [DEBUG] Socket 상태 체크:', {
+          hasSocket: !!socket,
+          isConnected: socket?.connected,
+          socketId: socket?.id,
+          userType: userType,
+          userId: user?.id,
+          userName: user?.name,
+          problemId: selectedProblem?.id,
+          problemTitle: selectedProblem?.title,
+          codeLength: code?.length
+        });
+        
+        if (socket && socket.connected) {
+          console.log('📺 [실행 버튼] 자동으로 화면 상태 전송:', currentScreenData);
+          console.log('🚀 [DEBUG] studentScreenUpdate 이벤트 전송 중...');
+          
+          // 이벤트 전송 성공/실패 추적을 위한 추가 로깅
+          socket.emit('studentScreenUpdate', currentScreenData);
+          console.log('✅ [DEBUG] socket.emit() 호출 완료');
+          
+          // 📊 진도 업데이트: 학생이 실행 버튼을 누를 때마다 현재 문제를 진도에 반영
+          try {
+            console.log('📊 [진도 업데이트] 현재 문제를 진도에 반영 시도:', selectedProblem.title);
+            const progressResponse = await axios.put(`${API_BASE_URL}/students/${user.id}/progress`, {
+              currentProblem: selectedProblem.title,
+              problemId: selectedProblem.id,
+              timestamp: new Date().toISOString()
+            });
+            console.log('✅ [진도 업데이트] 성공:', progressResponse.data);
+          } catch (progressError) {
+            console.error('❌ [진도 업데이트] 실패:', progressError);
+          }
+          
+          // 소켓 에러 발생 시 로깅
+          socket.on('error', (error) => {
+            console.error('❌ [DEBUG] Socket 에러 발생:', error);
+          });
+          
+          // 연결 해제 시 로깅
+          socket.on('disconnect', (reason) => {
+            console.warn('🔌 [DEBUG] Socket 연결 해제:', reason);
+          });
+          
+        } else {
+          console.error('❌ [DEBUG] Socket이 연결되지 않음:', {
+            hasSocket: !!socket,
+            isConnected: socket?.connected,
+            socketId: socket?.id
+          });
+        }
+      } else {
+        console.log('🔍 [DEBUG] 화면 상태 전송 조건 미충족:', {
+          userType: userType,
+          hasUser: !!user,
+          hasSelectedProblem: !!selectedProblem
+        });
+      }
     }
   };
 
@@ -2478,6 +3140,7 @@ const CodingMentoringPlatform = () => {
       alert('삭제 중 오류가 발생했습니다.');
     }
   };
+
 
   // 학생 실시간 메시지 로드 (무한 루프 방지)
   const loadLiveMessages = useCallback(async (studentId) => {
@@ -2771,12 +3434,30 @@ const CodingMentoringPlatform = () => {
       // 🔥 학생이 코드를 입력할 때 멘토에게 실시간 전송
       if (userType === 'student' && user && selectedProblem && socket && socket.connected) {
         console.log('📡 학생 코드 변경을 멘토에게 실시간 전송');
+        console.log('📋 전송 데이터:', {
+          studentId: user.id,
+          studentName: user.name,
+          problemId: selectedProblem.id,
+          codeLength: newCode.length,
+          socketConnected: socket.connected
+        });
+        
         socket.emit('studentCodeChange', {
           studentId: user.id,
           studentName: user.name,
           problemId: selectedProblem.id,
           code: newCode,
           timestamp: new Date().toISOString()
+        });
+        
+        console.log('✅ 실시간 코드 변경 신호 전송 완료');
+      } else {
+        console.log('⚠️ 실시간 코드 전송 조건 불만족:', {
+          userType,
+          hasUser: !!user,
+          hasSelectedProblem: !!selectedProblem,
+          hasSocket: !!socket,
+          socketConnected: socket?.connected
         });
       }
       
@@ -2946,7 +3627,7 @@ const CodingMentoringPlatform = () => {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', margin: 0 }}>
+              <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#111827', margin: 0 }}>
                 로앤코로봇코딩 멘토링 플랫폼
               </h1>
               <span style={{ fontSize: '16px', color: '#6b7280' }}>
@@ -2966,7 +3647,8 @@ const CodingMentoringPlatform = () => {
                       border: 'none',
                       backgroundColor: currentTab === 'mentor' ? '#2563eb' : '#f3f4f6',
                       color: currentTab === 'mentor' ? 'white' : '#374151',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontSize: '16px'
                     }}
                   >
                     👥 멘토 뷰
@@ -2979,7 +3661,8 @@ const CodingMentoringPlatform = () => {
                       border: 'none',
                       backgroundColor: currentTab === 'problems' ? '#2563eb' : '#f3f4f6',
                       color: currentTab === 'problems' ? 'white' : '#374151',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontSize: '16px'
                     }}
                   >
                     📝 문제 관리
@@ -2992,7 +3675,8 @@ const CodingMentoringPlatform = () => {
                       border: 'none',
                       backgroundColor: currentTab === 'student' ? '#2563eb' : '#f3f4f6',
                       color: currentTab === 'student' ? 'white' : '#374151',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontSize: '16px'
                     }}
                   >
                     👁️ 학생 뷰
@@ -3032,7 +3716,8 @@ const CodingMentoringPlatform = () => {
                   border: 'none',
                   backgroundColor: '#ef4444',
                   color: 'white',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: '16px'
                 }}
               >
                 로그아웃
@@ -3149,6 +3834,11 @@ const CodingMentoringPlatform = () => {
             setHasModifications={setHasModifications}
             findCodeDifferences={findCodeDifferences}
             loadStudentCurrentCode={loadStudentCurrentCode}
+            studentScreens={studentScreens}
+            onRequestStudentScreen={requestStudentScreen}
+            showScreenShare={showScreenShare}
+            setShowScreenShare={setShowScreenShare}
+            resetAllStudentStatus={resetAllStudentStatus}
           />
         ) : userType === 'admin' && currentTab === 'problems' ? (
           /* 문제 관리 */
@@ -3182,6 +3872,7 @@ const CodingMentoringPlatform = () => {
             code={code}
             onUpdateCode={(newCode) => updateCode(newCode, true)}
             onRunCode={runCode}
+            onResetCode={resetCode}
             onRequestHelp={requestHelp}
             output={output}
             isRunning={isRunning}
@@ -3228,6 +3919,21 @@ const CodingMentoringPlatform = () => {
               // localStorage에 선택된 문제 저장 (학생의 경우)
               if (userType === 'student' && user?.id) {
                 localStorage.setItem(`student_${user.id}_selectedProblem`, JSON.stringify(problem));
+                // 학생 화면 상태 업데이트 전송
+                setTimeout(() => {
+                  if (socket && socket.connected) {
+                    const screenData = {
+                      studentId: user.id,
+                      studentName: user.name,
+                      currentScreen: 'problem',
+                      selectedProblem: problem,
+                      currentLesson: currentLesson,
+                      timestamp: new Date().toISOString()
+                    };
+                    console.log('📺 학생 화면 상태 전송 (문제 선택):', screenData);
+                    socket.emit('studentScreenUpdate', screenData);
+                  }
+                }, 100);
               }
               setOutput(''); // 문제 변경 시 실행창 초기화
               
@@ -3237,15 +3943,19 @@ const CodingMentoringPlatform = () => {
               const localCode = problemCodes[problem.id];
               const savedCode = problemStatus[problem.id]?.code;
               
-              // ⭐ 아직 풀지 않은 문제(별이 0개)는 항상 스타터 코드만 보여주기
+              // ⭐ 제출한 적이 없는 문제만 스타터 코드 표시, 제출한 적이 있으면 점수 상관없이 제출 코드 표시
               const problemStars = problemStatus[problem.id]?.stars || 0;
-              const isUnsolvedProblem = problemStars === 0;
+              const hasSubmitted = !!savedCode || !!localStorageCode || !!localCode || !!problemStatus[problem.id]?.lastSubmittedAt;
               
-              if (isUnsolvedProblem) {
-                console.log('🌟 아직 풀지 않은 문제 - 스타터 코드만 표시:', { 
+              if (!hasSubmitted) {
+                console.log('📝 한 번도 제출하지 않은 문제 - 스타터 코드 표시:', { 
                   problemId: problem.id, 
                   problemTitle: problem.title,
-                  stars: problemStars 
+                  stars: problemStars,
+                  hasServerCode: !!savedCode,
+                  hasLocalStorageCode: !!localStorageCode,
+                  hasLocalCode: !!localCode,
+                  hasSubmissionRecord: !!problemStatus[problem.id]?.lastSubmittedAt
                 });
                 const newCode = problem.starterCode || '';
                 console.log('🔄 새 코드 설정:', { 
@@ -3258,6 +3968,16 @@ const CodingMentoringPlatform = () => {
                 console.log('✅ 문제 전환 완료:', { 새선택문제: problem.title, 새코드길이: newCode?.length });
                 return; // 여기서 종료
               }
+              
+              console.log('🔄 제출한 적이 있는 문제 - 제출 코드 복원:', { 
+                problemId: problem.id, 
+                problemTitle: problem.title,
+                stars: problemStars,
+                hasServerCode: !!savedCode,
+                hasLocalStorageCode: !!localStorageCode,
+                hasLocalCode: !!localCode,
+                hasSubmissionRecord: !!problemStatus[problem.id]?.lastSubmittedAt
+              });
               
               // 이미 풀어본 문제는 기존 로직대로 진행
               // 서버 데이터가 의미있는 내용인지 확인 (공백만 있거나 빈 문자열이면 무시)
@@ -3522,7 +4242,8 @@ const AdminDashboard = ({
   onSendFeedback, user, fontSize, onIncreaseFontSize, onDecreaseFontSize, helpRequests = [], onResolveHelp, onDeleteHelp,
   liveMessageInput, setLiveMessageInput, onSendLiveMessage, sentMessages = [], onDeleteLiveMessage,
   onSendCodeModification, originalCode, setOriginalCode, hasModifications, codeModifications = [],
-  findCodeDifferences, loadStudentCurrentCode
+  findCodeDifferences, loadStudentCurrentCode, studentScreens = {}, onRequestStudentScreen,
+  showScreenShare, setShowScreenShare, resetAllStudentStatus
 }) => {
 
   return (
@@ -3643,62 +4364,84 @@ const AdminDashboard = ({
       </div>
     )}
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1fr', gap: '24px' }}>
     {/* 학생 목록 */}
     <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
       
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
-            📊 전체학생현황 ({students.length}명)
-          </h2>
-          <div style={{ display: 'flex', gap: '6px' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: '600', margin: '0 0 12px 0' }}>
+          📊 전체학생현황 ({students.length}명)
+        </h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setSortBy('name')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: sortBy === 'name' ? '#8b5cf6' : '#f3f4f6',
+              color: sortBy === 'name' ? 'white' : '#374151',
+              border: sortBy === 'name' ? '2px solid #7c3aed' : '2px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: sortBy === 'name' ? '600' : '500',
+              minWidth: '100px',
+              textAlign: 'center'
+            }}
+          >
+            📝 가나다순
+          </button>
+          <button
+            onClick={() => setSortBy('studentId')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: sortBy === 'studentId' ? '#8b5cf6' : '#f3f4f6',
+              color: sortBy === 'studentId' ? 'white' : '#374151',
+              border: sortBy === 'studentId' ? '2px solid #7c3aed' : '2px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: sortBy === 'studentId' ? '600' : '500',
+              minWidth: '100px',
+              textAlign: 'center'
+            }}
+          >
+            🔢 학번순
+          </button>
+          <button
+            onClick={onAddStudent}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#059669',
+              color: 'white',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              minWidth: '100px',
+              textAlign: 'center'
+            }}
+          >
+            ➕ 학생<br/>추가
+          </button>
+          {resetAllStudentStatus && (
             <button
-              onClick={() => setSortBy('name')}
+              onClick={resetAllStudentStatus}
               style={{
-                padding: '4px 8px',
-                backgroundColor: sortBy === 'name' ? '#8b5cf6' : '#f3f4f6',
-                color: sortBy === 'name' ? 'white' : '#374151',
-                border: sortBy === 'name' ? '2px solid #7c3aed' : '2px solid #d1d5db',
-                borderRadius: '4px',
+                padding: '8px 16px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                borderRadius: '6px',
+                border: 'none',
                 cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: sortBy === 'name' ? '600' : '500'
+                fontSize: '14px',
+                minWidth: '100px',
+                textAlign: 'center'
               }}
             >
-              📝 가나다순
+              🔄 상태<br/>초기화
             </button>
-            <button
-              onClick={() => setSortBy('studentId')}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: sortBy === 'studentId' ? '#8b5cf6' : '#f3f4f6',
-                color: sortBy === 'studentId' ? 'white' : '#374151',
-                border: sortBy === 'studentId' ? '2px solid #7c3aed' : '2px solid #d1d5db',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: sortBy === 'studentId' ? '600' : '500'
-              }}
-            >
-              🔢 학번순
-            </button>
-          </div>
+          )}
         </div>
-        <button
-          onClick={onAddStudent}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: '#059669',
-            color: 'white',
-            borderRadius: '6px',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          ➕ 학생 추가
-        </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {students.map((student, index) => (
@@ -3720,8 +4463,8 @@ const AdminDashboard = ({
               cursor: 'pointer'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ flex: 1 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
                     fontSize: '14px',
@@ -3735,61 +4478,7 @@ const AdminDashboard = ({
                   }}>
                     {index + 1}
                   </span>
-                  <span style={{ fontWeight: '500' }}>{student.name}</span>
-                  <span style={{
-                    fontSize: '12px',
-                    padding: '2px 6px',
-                    backgroundColor: getClassColor(student.class),
-                    color: 'white',
-                    borderRadius: '10px'
-                  }}>
-                    {student.class || '미배정'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '14px', color: '#9ca3af' }}>학번: {student.studentId}</div>
-                <div style={{ fontSize: '16px', color: '#6b7280' }}>
-                  진도: {student.progress}/100 | {student.currentProblem}
-                </div>
-                <div style={{ fontSize: '14px', color: '#9ca3af' }}>{student.lastActive}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditStudent(student);
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: '#f59e0b',
-                    color: 'white',
-                    borderRadius: '4px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  수정
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteStudent(student.id);
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    borderRadius: '4px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  삭제
-                </button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {student.needsHelp === 1 && <span style={{ color: '#ef4444' }}>🚨</span>}
-                  {student.status === 'completed' && <span style={{ color: '#10b981' }}>✅</span>}
+                  <span style={{ fontWeight: '500', fontSize: '16px' }}>{student.name}</span>
                   <div style={{
                     width: '12px',
                     height: '12px',
@@ -3797,7 +4486,71 @@ const AdminDashboard = ({
                     backgroundColor: student.status === 'online' ? '#10b981' : 
                                    student.status === 'stuck' ? '#ef4444' : '#6b7280'
                   }} />
+                  {student.needsHelp === 1 && <span style={{ color: '#ef4444' }}>🚨</span>}
+                  {student.status === 'completed' && <span style={{ color: '#10b981' }}>✅</span>}
                 </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: getClassColor(student.class),
+                      color: 'white',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'default',
+                      fontSize: '12px',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {student.class ? student.class.replace('반', '') : '미배정'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditStudent(student);
+                    }}
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: '#f59e0b',
+                      color: 'white',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteStudent(student.id);
+                    }}
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+              <div style={{ paddingLeft: '32px' }}>
+                <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '4px' }}>학번: {student.studentId}</div>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
+                  진도: {student.progress}/100 | {student.currentProblem}
+                </div>
+                <div style={{ fontSize: '12px', color: '#9ca3af' }}>{student.lastActive}</div>
               </div>
             </div>
             {student.needsHelp === 1 && (
@@ -3829,7 +4582,7 @@ const AdminDashboard = ({
     {/* 실시간 코드 뷰어 */}
     <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '600' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: '600' }}>
           {selectedStudent ? `${selectedStudent.name}의 코드` : '학생을 선택하세요'}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -4083,7 +4836,7 @@ const AdminDashboard = ({
 
 // 학생 뷰 컴포넌트
 const StudentView = ({ 
-  user, code, onUpdateCode, onRunCode, onRequestHelp, output, isRunning,
+  user, code, onUpdateCode, onRunCode, onResetCode, onRequestHelp, output, isRunning,
   problems, selectedProblem, onSelectProblem, currentLesson, onLessonChange,
   problemStatus, onSubmitProblem, lessons, latestFeedback,
   fontSize, onIncreaseFontSize, onDecreaseFontSize, submittingProblems, liveMessages = [],
@@ -4234,8 +4987,8 @@ const StudentView = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* 문제 상세 */}
       {selectedProblem && (
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }} data-problem-id={selectedProblem.id}>
+          <h2 className="problem-title" style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' }}>
             {selectedProblem.title}
           </h2>
           
@@ -4264,9 +5017,29 @@ const StudentView = ({
           {selectedProblem.hints && (
             <div style={{ marginBottom: '16px' }}>
               <strong>힌트:</strong>
-              <div style={{ marginTop: '4px', fontSize: '16px', color: '#6b7280' }}>
-                {selectedProblem.hints.split('\n').map((hint, index) => (
-                  <div key={index} style={{ marginLeft: '16px' }}>• {hint}</div>
+              <div style={{ marginTop: '8px' }}>
+                {(() => {
+                  try {
+                    const hints = typeof selectedProblem.hints === 'string' 
+                      ? JSON.parse(selectedProblem.hints) 
+                      : selectedProblem.hints;
+                    return Array.isArray(hints) ? hints : selectedProblem.hints.split('\n');
+                  } catch (e) {
+                    return selectedProblem.hints.split('\n');
+                  }
+                })().map((hint, index) => (
+                  <div key={index} style={{ 
+                    marginBottom: '8px',
+                    padding: '8px 12px',
+                    backgroundColor: '#f8f9fa',
+                    borderLeft: '3px solid #4CAF50',
+                    borderRadius: '4px',
+                    fontSize: '15px',
+                    color: '#374151',
+                    whiteSpace: 'pre-line'
+                  }}>
+                    💡 {hint}
+                  </div>
                 ))}
               </div>
             </div>
@@ -4424,6 +5197,28 @@ const StudentView = ({
           >
             {submittingProblems.has(selectedProblem?.id) ? '제출중...' : '⭐ 제출 (자동채점)'}
           </button>
+          <button
+            onClick={() => {
+              console.log('코드 초기화 버튼 클릭됨!');
+              if (window.confirm('코드를 초기 상태로 되돌리시겠습니까?\n현재 작성한 코드는 모두 사라집니다.')) {
+                onResetCode();
+              }
+            }}
+            disabled={!selectedProblem || !selectedProblem.starterCode}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 16px',
+              backgroundColor: (!selectedProblem || !selectedProblem.starterCode) ? '#9ca3af' : '#dc2626',
+              color: 'white',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: (!selectedProblem || !selectedProblem.starterCode) ? 'not-allowed' : 'pointer',
+              opacity: (!selectedProblem || !selectedProblem.starterCode) ? 0.5 : 1
+            }}
+          >
+            🔄 코드 초기화
+          </button>
         </div>
 
         {output && (
@@ -4449,6 +5244,22 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
   const previousCodeRef = React.useRef(code);
   const isTypingRef = React.useRef(false);
   const lastChangeTimeRef = React.useRef(0);
+
+  // 외부에서 code prop이 변경될 때 에디터 값 업데이트
+  React.useEffect(() => {
+    if (editorRef.current && code !== undefined) {
+      const currentValue = editorRef.current.getValue();
+      if (currentValue !== code && !isTypingRef.current) {
+        console.log('🔄 외부 code prop 변경 감지, 에디터 업데이트:', { 
+          currentValue: currentValue.substring(0, 50) + '...', 
+          newCode: code.substring(0, 50) + '...',
+          readOnly,
+          userType
+        });
+        editorRef.current.setValue(code);
+      }
+    }
+  }, [code, readOnly, userType]);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -4728,57 +5539,68 @@ const CodeEditor = ({ code, onChange, readOnly = false, fontSize = 14, modificat
       isTypingRef.current = false;
       console.log('🖱️ 마우스 클릭 감지');
       
-      // 클릭 위치 저장 (placeholder 삭제 후 커서 위치 복구용)
-      const clickPosition = e.target.position;
-      if (clickPosition) {
-        console.log('📍 클릭 위치 저장:', clickPosition);
+      const model = editor.getModel();
+      if (model) {
+        const currentValue = model.getValue();
+        const standardPlaceholder = '// 여기에 코드를 입력하세요';
         
-        // placeholder 클릭 감지를 위한 딜레이 후 처리
-        setTimeout(() => {
-          const model = editor.getModel();
-          if (model) {
-            const currentValue = model.getValue();
-            const standardPlaceholder = '// 여기에 코드를 입력하세요';
+        if (currentValue.includes(standardPlaceholder)) {
+          console.log('🎯 플레이스홀더 감지됨, 클릭 위치 확인');
+          
+          // 클릭 위치 가져오기 (이벤트에서 직접)
+          const clickPosition = e.target.position;
+          console.log('📍 클릭 위치:', clickPosition);
+          
+          // 플레이스홀더가 있는 줄과 위치 찾기
+          const lines = currentValue.split('\n');
+          let placeholderLine = -1;
+          let placeholderColumn = 1;
+          
+          for (let i = 0; i < lines.length; i++) {
+            const placeholderIndex = lines[i].indexOf(standardPlaceholder);
+            if (placeholderIndex !== -1) {
+              placeholderLine = i + 1; // Monaco는 1-based
+              placeholderColumn = placeholderIndex + 1; // Monaco는 1-based
+              break;
+            }
+          }
+          
+          if (placeholderLine !== -1) {
+            // 클릭이 플레이스홀더 영역에서 발생했는지 확인
+            const isClickOnPlaceholderLine = clickPosition && clickPosition.lineNumber === placeholderLine;
+            const isClickOnPlaceholder = isClickOnPlaceholderLine && 
+              clickPosition.column >= placeholderColumn && 
+              clickPosition.column <= placeholderColumn + standardPlaceholder.length - 1;
             
-            if (currentValue.includes(standardPlaceholder)) {
-              console.log('🎯 플레이스홀더 클릭 감지, 삭제 후 커서 위치 복구');
-              
-              // 플레이스홀더가 있는 줄 찾기
-              const lines = currentValue.split('\n');
-              let placeholderLine = -1;
-              let placeholderColumn = 0;
-              
-              for (let i = 0; i < lines.length; i++) {
-                const placeholderIndex = lines[i].indexOf(standardPlaceholder);
-                if (placeholderIndex !== -1) {
-                  placeholderLine = i + 1; // Monaco는 1-based
-                  placeholderColumn = placeholderIndex + 1; // Monaco는 1-based
-                  break;
-                }
-              }
+            console.log('📋 플레이스홀더 정보:', {
+              line: placeholderLine,
+              column: placeholderColumn,
+              isClickOnLine: isClickOnPlaceholderLine,
+              isClickOnPlaceholder: isClickOnPlaceholder,
+              clickPos: clickPosition
+            });
+            
+            if (isClickOnPlaceholder) {
+              // 플레이스홀더를 직접 클릭했을 때만 삭제
+              console.log('🎯 플레이스홀더 클릭 감지 - 삭제 시작');
               
               // 플레이스홀더 삭제
               const newValue = currentValue.replace(standardPlaceholder, '');
               model.setValue(newValue);
               
-              // 커서 위치 복구 - 플레이스홀더 위치 또는 클릭 위치 중 적절한 곳에
-              let targetPosition;
-              if (placeholderLine !== -1 && 
-                  clickPosition.lineNumber === placeholderLine && 
-                  clickPosition.column >= placeholderColumn && 
-                  clickPosition.column <= placeholderColumn + standardPlaceholder.length) {
-                // 플레이스홀더 내부를 클릭했다면 플레이스홀더 시작 위치로
-                targetPosition = { lineNumber: placeholderLine, column: placeholderColumn };
-              } else {
-                // 다른 곳을 클릭했다면 원래 클릭 위치 유지
-                targetPosition = clickPosition;
-              }
+              // 플레이스홀더가 있던 위치로 커서 이동
+              const targetPosition = { lineNumber: placeholderLine, column: placeholderColumn };
+              console.log('🎯 커서를 플레이스홀더 위치로 이동:', targetPosition);
               
-              console.log('🎯 커서 위치 설정:', targetPosition);
-              editor.setPosition(targetPosition);
+              // 약간의 지연 후 커서 위치 설정 (DOM 업데이트 대기)
+              setTimeout(() => {
+                editor.setPosition(targetPosition);
+                editor.focus();
+                console.log('✅ 플레이스홀더 삭제 및 커서 위치 설정 완료');
+              }, 10);
             }
           }
-        }, 10);
+        }
       }
     });
     
