@@ -4,7 +4,7 @@ const path = require('path');
 
 class User {
   constructor() {
-    this.db = new sqlite3.Database(path.join(__dirname, '..', 'users.db'));
+    this.db = new sqlite3.Database(path.join(__dirname, '..', '..', 'database.db'));
     this.init();
   }
 
@@ -94,24 +94,29 @@ class User {
   async authenticateUser(username, password) {
     return new Promise((resolve, reject) => {
       this.db.get(`
-        SELECT * FROM users WHERE username = ? AND is_active = 1
+        SELECT * FROM users WHERE username = ?
       `, [username], async (err, user) => {
         if (err) {
           reject(err);
         } else if (!user) {
           resolve(null);
         } else {
-          const isValid = await bcrypt.compare(password, user.password);
+          // 기존 평문 비밀번호와 bcrypt 해시 모두 지원
+          let isValid = false;
+          if (user.password.startsWith('$2b$') || user.password.startsWith('$2a$')) {
+            // bcrypt 해시된 비밀번호
+            isValid = await bcrypt.compare(password, user.password);
+          } else {
+            // 평문 비밀번호 (기존 DB 호환성)
+            isValid = password === user.password;
+          }
+
           if (isValid) {
-            // 마지막 로그인 시간 업데이트
-            this.updateLastLogin(user.id);
             resolve({
               id: user.id,
               username: user.username,
               name: user.name,
-              role: user.role,
-              className: user.class_name,
-              studentNumber: user.student_number
+              role: user.role
             });
           } else {
             resolve(null);

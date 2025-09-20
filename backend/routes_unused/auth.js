@@ -1,6 +1,10 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const User = require('../backups/unused_models/User');
+
+// User 인스턴스 생성
+const user = new User();
 
 const JWT_SECRET = 'your-secret-key-here'; // 실제 프로덕션에서는 환경변수로 관리
 

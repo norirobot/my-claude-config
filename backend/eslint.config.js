@@ -3,7 +3,7 @@ const js = require('@eslint/js');
 module.exports = [
   {
     files: ['**/*.js'],
-    ignores: ['node_modules/**', 'database.db', 'backups/**', 'coverage/**'],
+    ignores: ['node_modules/**', 'database.db', 'backups/**', 'coverage/**', 'routes_unused/**'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

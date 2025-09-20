@@ -6,6 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
 const { analyzeCodeQuality, analyzeComplexity } = require('./utils/codeAnalyzer');
+const { generateTeacherGuide, generateCommentedCodeForTeacher } = require('./utils/teacherGuide');
 
 // Rate limiting to prevent infinite API loops
 const rateLimitMap = new Map();
@@ -98,14 +99,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// 인증 라우트 추가
-const { router: authRouter } = require('./routes/auth');
-const adminRouter = require('./routes/admin');
-const studentRouter = require('./routes/student');
+// 인증 라우트 추가 (현재 미사용 - server.js에서 직접 구현됨)
+// const { router: authRouter } = require('./routes/auth');
+// const adminRouter = require('./routes/admin');
+// const studentRouter = require('./routes/student');
 
-app.use('/api/auth', authRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/student', studentRouter);
+// app.use('/api/auth', authRouter);
+// app.use('/api/admin', adminRouter);
+// app.use('/api/student', studentRouter);
 
 // 모든 요청 로깅 미들웨어
 app.use((req, res, next) => {
@@ -253,6 +254,29 @@ db.serialize(() => {
       console.log('차시 테이블 생성 오류:', err.message);
     } else {
       console.log('차시 테이블이 생성되었습니다.');
+
+      // 힌트 요청 테이블 생성
+      db.run(`CREATE TABLE IF NOT EXISTS hint_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER NOT NULL,
+        student_name TEXT NOT NULL,
+        problem_id INTEGER NOT NULL,
+        problem_title TEXT NOT NULL,
+        student_code TEXT NOT NULL,
+        request_message TEXT,
+        status TEXT DEFAULT 'pending',
+        teacher_response TEXT,
+        hint_level INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        responded_at TEXT,
+        FOREIGN KEY (student_id) REFERENCES users(id)
+      )`, (err) => {
+        if (err) {
+          console.log('힌트 요청 테이블 생성 오류:', err.message);
+        } else {
+          console.log('힌트 요청 테이블이 생성되었습니다.');
+        }
+      });
 
       // 문제 5번 인코딩 문제 수정
       db.run(`UPDATE problems SET 
@@ -3002,6 +3026,351 @@ app.delete('/api/lessons/:id', (req, res) => {
         res.json({ success: true });
       });
     });
+});
+
+// 힌트 요청 API
+app.post('/api/hint-request', (req, res) => {
+  const { studentId, studentName, problemId, problemTitle, code, message } = req.body;
+
+  console.log('📩 힌트 요청 받음:', { studentName, problemTitle, messageLength: message?.length });
+
+  if (!studentId || !studentName || !problemId || !problemTitle || !code) {
+    return res.status(400).json({
+      success: false,
+      error: '필수 정보가 누락되었습니다.'
+    });
+  }
+
+  const sql = `INSERT INTO hint_requests
+    (student_id, student_name, problem_id, problem_title, student_code, request_message)
+    VALUES (?, ?, ?, ?, ?, ?)`;
+
+  db.run(sql, [studentId, studentName, problemId, problemTitle, code, message || ''], function(err) {
+    if (err) {
+      console.error('힌트 요청 저장 오류:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: '힌트 요청 저장에 실패했습니다.'
+      });
+    }
+
+    const requestId = this.lastID;
+    console.log(`✅ 힌트 요청 저장됨 (ID: ${requestId})`);
+
+    // 관리자에게 실시간 알림 전송
+    io.emit('newHintRequest', {
+      id: requestId,
+      studentName,
+      problemTitle,
+      message: message || '힌트를 요청했습니다',
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      requestId,
+      message: '힌트 요청이 선생님께 전송되었습니다.'
+    });
+  });
+});
+
+// 힌트 요청 목록 조회 (관리자용)
+app.get('/api/hint-requests', (req, res) => {
+  const status = req.query.status || 'pending';
+
+  const sql = `SELECT * FROM hint_requests
+               WHERE status = ?
+               ORDER BY created_at DESC`;
+
+  db.all(sql, [status], (err, rows) => {
+    if (err) {
+      console.error('힌트 요청 조회 오류:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: '힌트 요청 조회에 실패했습니다.'
+      });
+    }
+
+    console.log(`📋 힌트 요청 조회: ${rows.length}개 (상태: ${status})`);
+    res.json({ success: true, requests: rows });
+  });
+});
+
+// 관리자 힌트 응답 API
+app.post('/api/hint-response', (req, res) => {
+  const { requestId, response, hintLevel } = req.body;
+
+  console.log('📨 관리자 힌트 응답:', { requestId, hintLevel, responseLength: response?.length });
+
+  if (!requestId || !response) {
+    return res.status(400).json({
+      success: false,
+      error: '요청 ID와 응답 내용이 필요합니다.'
+    });
+  }
+
+  const sql = `UPDATE hint_requests
+               SET teacher_response = ?, hint_level = ?, status = 'answered', responded_at = CURRENT_TIMESTAMP
+               WHERE id = ?`;
+
+  db.run(sql, [response, hintLevel || 1, requestId], function(err) {
+    if (err) {
+      console.error('힌트 응답 저장 오류:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: '힌트 응답 저장에 실패했습니다.'
+      });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '해당 요청을 찾을 수 없습니다.'
+      });
+    }
+
+    console.log(`✅ 힌트 응답 저장됨 (요청 ID: ${requestId}, 레벨: ${hintLevel})`);
+
+    // 학생에게 실시간 힌트 전송
+    db.get('SELECT student_id, student_name FROM hint_requests WHERE id = ?', [requestId], (err, row) => {
+      if (!err && row) {
+        io.emit('hintReceived', {
+          studentId: row.student_id,
+          studentName: row.student_name,
+          hint: response,
+          level: hintLevel || 1,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`📩 학생 ${row.student_name}에게 힌트 전송됨`);
+      }
+    });
+
+    res.json({
+      success: true,
+      message: '힌트가 학생에게 전송되었습니다.'
+    });
+  });
+});
+
+// 단계별 미리 정의된 힌트 제공 API
+app.post('/api/provide-hint', (req, res) => {
+  const { requestId, hintType } = req.body;
+
+  console.log('🎯 단계별 힌트 제공:', { requestId, hintType });
+
+  if (!requestId || !hintType) {
+    return res.status(400).json({
+      success: false,
+      error: '요청 ID와 힌트 타입이 필요합니다.'
+    });
+  }
+
+  // 미리 정의된 힌트들
+  const predefinedHints = {
+    level1: '코드 구조를 다시 한번 살펴보세요. C 프로그램의 기본 형태를 생각해보세요.',
+    level2: 'main 함수는 보통 어떤 값을 반환해야 할까요? C 언어 교재의 예시를 참고해보세요.',
+    level3: "main 함수 끝에 'return 0;'을 추가해보세요. 이는 프로그램이 성공적으로 끝났다는 신호입니다.",
+    direct: 'return 0;을 main 함수 마지막에 추가하세요.',
+    structure: 'C 프로그램의 기본 구조: #include <stdio.h> → int main() { → 코드 → return 0; }',
+    encourage: '거의 다 맞았어요! 작은 부분만 수정하면 완벽합니다.'
+  };
+
+  const hintText = predefinedHints[hintType];
+  if (!hintText) {
+    return res.status(400).json({
+      success: false,
+      error: '잘못된 힌트 타입입니다.'
+    });
+  }
+
+  const hintLevel = hintType.includes('level') ? parseInt(hintType.replace('level', '')) :
+    (hintType === 'direct' ? 4 : 1);
+
+  const sql = `UPDATE hint_requests
+               SET teacher_response = ?, hint_level = ?, status = 'answered', responded_at = CURRENT_TIMESTAMP
+               WHERE id = ?`;
+
+  db.run(sql, [hintText, hintLevel, requestId], function(err) {
+    if (err) {
+      console.error('미리 정의된 힌트 저장 오류:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: '힌트 저장에 실패했습니다.'
+      });
+    }
+
+    console.log(`✅ ${hintType} 힌트 제공됨 (요청 ID: ${requestId})`);
+
+    // 학생에게 실시간 힌트 전송
+    db.get('SELECT student_id, student_name FROM hint_requests WHERE id = ?', [requestId], (err, row) => {
+      if (!err && row) {
+        io.emit('hintReceived', {
+          studentId: row.student_id,
+          studentName: row.student_name,
+          hint: hintText,
+          level: hintLevel,
+          type: hintType,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`📩 ${hintType} 힌트가 ${row.student_name}에게 전송됨`);
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `${hintType} 힌트가 학생에게 전송되었습니다.`,
+      hint: hintText
+    });
+  });
+});
+
+// ========================================
+// 🤖 AI 교사 가이드 시스템 API
+// ========================================
+
+// 교사를 위한 학생 코드 AI 분석 API
+app.post('/api/teacher-analyze', (req, res) => {
+  const { code, studentName, problemId } = req.body;
+
+  console.log('🎓 교사용 AI 분석 요청:', {
+    studentName: studentName || 'Unknown',
+    problemId: problemId || 'Unknown',
+    codeLength: code ? code.length : 0
+  });
+
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      error: '분석할 코드가 필요합니다.'
+    });
+  }
+
+  try {
+    // AI 교사 가이드 생성
+    const teacherGuide = generateTeacherGuide(code);
+
+    // 교사용 주석이 포함된 코드 생성
+    const commentedCode = generateCommentedCodeForTeacher(code, teacherGuide.studentCodeAnalysis);
+
+    console.log('✅ AI 분석 완료:', {
+      score: teacherGuide.studentCodeAnalysis.quality.score,
+      issuesCount: teacherGuide.studentCodeAnalysis.quality.issues.length,
+      teachingStrategy: teacherGuide.teachingStrategy.split(':')[0]
+    });
+
+    res.json({
+      success: true,
+      studentInfo: {
+        name: studentName || 'Unknown',
+        problemId: problemId || 'Unknown'
+      },
+      analysis: teacherGuide,
+      commentedCode: commentedCode,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ AI 분석 오류:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'AI 분석 중 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
+// 힌트 요청과 함께 AI 분석 제공하는 통합 API
+app.post('/api/hint-request-with-analysis', (req, res) => {
+  const { studentId, studentName, problemId, problemTitle, code, message } = req.body;
+
+  console.log('💡 힌트 요청 + AI 분석:', {
+    studentName,
+    problemId,
+    codeLength: code ? code.length : 0
+  });
+
+  if (!studentId || !studentName || !problemId || !code) {
+    return res.status(400).json({
+      success: false,
+      error: '모든 필수 정보가 필요합니다. (studentId, studentName, problemId, code)'
+    });
+  }
+
+  // 1. 기존 힌트 요청 저장
+  const stmt = db.prepare(`
+    INSERT INTO hint_requests
+    (student_id, student_name, problem_id, problem_title, student_code, request_message, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+  `);
+
+  stmt.run([studentId, studentName, problemId, problemTitle || `문제 ${problemId}`, code, message || '도움이 필요합니다'],
+    function(err) {
+      if (err) {
+        console.error('❌ 힌트 요청 저장 실패:', err.message);
+        return res.status(500).json({
+          success: false,
+          error: '힌트 요청 저장에 실패했습니다.',
+          details: err.message
+        });
+      }
+
+      const requestId = this.lastID;
+
+      try {
+      // 2. AI 교사 가이드 생성
+        const teacherGuide = generateTeacherGuide(code);
+        const commentedCode = generateCommentedCodeForTeacher(code, teacherGuide.studentCodeAnalysis);
+
+        // 3. 실시간 알림 - 힌트 요청 + AI 분석 결과
+        io.emit('newHintRequest', {
+          id: requestId,
+          studentId,
+          studentName,
+          problemId,
+          problemTitle: problemTitle || `문제 ${problemId}`,
+          code,
+          message: message || '도움이 필요합니다',
+          aiAnalysis: teacherGuide,
+          commentedCode: commentedCode,
+          timestamp: new Date().toISOString()
+        });
+
+        console.log(`📡 힌트 요청 + AI 분석 전송됨: ${studentName} (요청 ID: ${requestId})`);
+
+        res.json({
+          success: true,
+          requestId: requestId,
+          message: '힌트 요청이 AI 분석과 함께 선생님에게 전송되었습니다.',
+          aiAnalysis: teacherGuide
+        });
+
+      } catch (analysisError) {
+        console.error('❌ AI 분석 오류:', analysisError.message);
+
+        // AI 분석 실패해도 기본 힌트 요청은 전송
+        io.emit('newHintRequest', {
+          id: requestId,
+          studentId,
+          studentName,
+          problemId,
+          problemTitle: problemTitle || `문제 ${problemId}`,
+          code,
+          message: message || '도움이 필요합니다',
+          aiAnalysis: null,
+          error: 'AI 분석 실패',
+          timestamp: new Date().toISOString()
+        });
+
+        res.json({
+          success: true,
+          requestId: requestId,
+          message: '힌트 요청이 전송되었습니다. (AI 분석은 실패했습니다)',
+          aiAnalysisError: analysisError.message
+        });
+      }
+    });
+
+  stmt.finalize();
 });
 
 const PORT = process.env.PORT || 3008;
