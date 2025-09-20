@@ -960,6 +960,7 @@ const CodingMentoringPlatform = () => {
   const [problemCodes, setProblemCodes] = useState({});
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // 필터링되지 않은 전체 학생 목록 (헤더 통계용)
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
@@ -1183,7 +1184,8 @@ const CodingMentoringPlatform = () => {
   // 정렬 및 반 선택 변경 시 학생 목록 다시 로드
   useEffect(() => {
     if (userType === 'admin') {
-      loadStudents();
+      loadAllStudents(); // 헤더 통계용 전체 학생 목록 로드
+      loadStudents(); // 필터링된 학생 목록 로드
     }
   }, [selectedClass, sortBy, userType]);
 
@@ -1196,7 +1198,17 @@ const CodingMentoringPlatform = () => {
     }
   }, [filteredStudents]);
 
-  // 학생 목록 로드
+  // 전체 학생 목록 로드 (필터링 없음, 헤더 통계용)
+  const loadAllStudents = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/students?sortBy=${sortBy}`);
+      setAllStudents(response.data);
+    } catch (error) {
+      console.error('전체 학생 목록 로드 실패:', error);
+    }
+  };
+
+  // 학생 목록 로드 (필터링 적용)
   const loadStudents = async () => {
     try {
       const params = new URLSearchParams();
@@ -1204,7 +1216,7 @@ const CodingMentoringPlatform = () => {
         params.append('class', selectedClass);
       }
       params.append('sortBy', sortBy);
-      
+
       const queryParam = params.toString() ? `?${params.toString()}` : '';
       const response = await axios.get(`${API_BASE_URL}/students${queryParam}`);
       setStudents(response.data);
@@ -3574,11 +3586,11 @@ const CodingMentoringPlatform = () => {
     }
   };
 
-  // 반별 통계 계산
+  // 반별 통계 계산 (전체 학생 기준, 필터링 상관없이)
   const getClassStats = () => {
     const stats = {};
     classOptions.slice(1).forEach(className => {
-      stats[className] = students.filter(s => s.class === className).length;
+      stats[className] = allStudents.filter(s => s.class === className).length;
     });
     return stats;
   };
@@ -3784,7 +3796,7 @@ const CodingMentoringPlatform = () => {
                   }
                 }}
               >
-                전체: {students.length}명
+                전체: {allStudents.length}명
               </button>
             </div>
           )}
@@ -4521,70 +4533,140 @@ const AdminDashboard = ({
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setSortBy('name')}
+            title="가나다순 정렬"
             style={{
               padding: '8px 16px',
-              backgroundColor: sortBy === 'name' ? '#8b5cf6' : '#f3f4f6',
+              backgroundColor: sortBy === 'name' ? '#1f2937' : '#f8fafc',
               color: sortBy === 'name' ? 'white' : '#374151',
-              border: sortBy === 'name' ? '2px solid #7c3aed' : '2px solid #d1d5db',
-              borderRadius: '6px',
+              border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: sortBy === 'name' ? '600' : '500',
+              fontWeight: '500',
+              height: '36px',
               minWidth: '100px',
-              textAlign: 'center'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (sortBy !== 'name') {
+                e.target.style.backgroundColor = '#e2e8f0';
+                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (sortBy !== 'name') {
+                e.target.style.backgroundColor = '#f8fafc';
+                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }
             }}
           >
-            📝 가나다순
+            <span style={{ fontSize: '20px' }}>🔤</span>
           </button>
           <button
             onClick={() => setSortBy('studentId')}
+            title="학번순 정렬"
             style={{
               padding: '8px 16px',
-              backgroundColor: sortBy === 'studentId' ? '#8b5cf6' : '#f3f4f6',
+              backgroundColor: sortBy === 'studentId' ? '#1f2937' : '#f8fafc',
               color: sortBy === 'studentId' ? 'white' : '#374151',
-              border: sortBy === 'studentId' ? '2px solid #7c3aed' : '2px solid #d1d5db',
-              borderRadius: '6px',
+              border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: sortBy === 'studentId' ? '600' : '500',
+              fontWeight: '500',
+              height: '36px',
               minWidth: '100px',
-              textAlign: 'center'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (sortBy !== 'studentId') {
+                e.target.style.backgroundColor = '#e2e8f0';
+                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (sortBy !== 'studentId') {
+                e.target.style.backgroundColor = '#f8fafc';
+                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }
             }}
           >
-            🔢 학번순
+            <span style={{ fontSize: '20px' }}>🔢</span>
           </button>
           <button
             onClick={onAddStudent}
+            title="새 학생 추가"
             style={{
               padding: '8px 16px',
               backgroundColor: '#059669',
               color: 'white',
-              borderRadius: '6px',
               border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
+              fontWeight: '500',
+              height: '36px',
               minWidth: '100px',
-              textAlign: 'center'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#047857';
+              e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#059669';
+              e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              e.target.style.transform = 'translateY(0)';
             }}
           >
-            ➕ 학생<br/>추가
+            <span style={{ fontSize: '22px' }}>➕</span>
           </button>
           {resetAllStudentStatus && (
             <button
               onClick={resetAllStudentStatus}
+              title="모든 학생 상태 초기화"
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#ff9800',
+                backgroundColor: '#dc2626',
                 color: 'white',
-                borderRadius: '6px',
                 border: 'none',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
+                fontWeight: '500',
+                height: '36px',
                 minWidth: '100px',
-                textAlign: 'center'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#b91c1c';
+                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#dc2626';
+                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                e.target.style.transform = 'translateY(0)';
               }}
             >
-              🔄 상태<br/>초기화
+              <span style={{ fontSize: '20px' }}>🔄</span>
             </button>
           )}
         </div>
