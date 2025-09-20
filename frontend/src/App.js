@@ -4309,6 +4309,39 @@ const AdminDashboard = ({
     return summary;
   };
 
+  // 🔄 Phase 3: 톱니바퀴 메뉴 드롭다운 상태
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  // 드롭다운 토글 함수
+  const toggleDropdown = (studentId) => {
+    setOpenDropdown(openDropdown === studentId ? null : studentId);
+  };
+
+  // 드롭다운 외부 클릭 시 닫기 useEffect
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // 드롭다운이 열려있을 때만 처리
+      if (openDropdown) {
+        setOpenDropdown(null);
+      }
+    };
+
+    // 문서 전체에 클릭 이벤트 리스너 추가
+    document.addEventListener('click', handleClickOutside);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openDropdown]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  const handleDropdownAction = (action, student, e) => {
+    e.stopPropagation();
+    setOpenDropdown(null);
+    action(student);
+  };
+
   return (
   <div>
     {/* 실시간 도움 요청 표시 영역 */}
@@ -4604,59 +4637,97 @@ const AdminDashboard = ({
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
+                  {/* 🔄 Phase 3: 요일은 사각형으로 구분 */}
                   <button
                     style={{
                       padding: '4px 12px',
                       backgroundColor: getClassColor(student.class),
                       color: 'white',
-                      borderRadius: '4px',
+                      borderRadius: '2px', // 사각형 모양으로 변경 (기존 4px → 2px)
                       border: 'none',
                       cursor: 'default',
                       fontSize: '12px',
-                      minWidth: '60px',
+                      minWidth: '40px', // 공간 절약을 위해 축소 (60px → 40px)
                       textAlign: 'center'
                     }}
                   >
-                    {student.class ? student.class.replace('반', '') : '미배정'}
+                    {getShortClassName(student.class)}
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditStudent(student);
-                    }}
-                    style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#f59e0b',
-                      color: 'white',
-                      borderRadius: '4px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      minWidth: '60px',
-                      textAlign: 'center'
-                    }}
-                  >
-                    수정
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteStudent(student.id);
-                    }}
-                    style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#ef4444',
-                      color: 'white',
-                      borderRadius: '4px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      minWidth: '60px',
-                      textAlign: 'center'
-                    }}
-                  >
-                    삭제
-                  </button>
+                  {/* 🔄 Phase 3: 톱니바퀴 메뉴로 통합 */}
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDropdown(student.id);
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      ⚙️
+                    </button>
+
+                    {/* 드롭다운 메뉴 */}
+                    {openDropdown === student.id && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: '0',
+                        backgroundColor: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        zIndex: 1000,
+                        minWidth: '100px',
+                        marginTop: '2px'
+                      }}>
+                        <button
+                          onClick={(e) => handleDropdownAction(onEditStudent, student, e)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#374151',
+                            borderBottom: '1px solid #e5e7eb'
+                          }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                          onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                        >
+                          ✏️ 수정
+                        </button>
+                        <button
+                          onClick={(e) => handleDropdownAction(() => onDeleteStudent(student.id), student, e)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#dc2626'
+                          }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = '#fef2f2'}
+                          onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div style={{ paddingLeft: '32px' }}>
@@ -6387,6 +6458,20 @@ const StudentModal = ({ title, student = null, onSubmit, onClose, showClassSelec
 
 
 // 반별 색상 지정 함수
+// 🔄 Phase 3: 요일 축약 표시 함수
+const getShortClassName = (className) => {
+  const shortNames = {
+    '월요일반': '월',
+    '화요일반': '화',
+    '수요일반': '수',
+    '목요일반': '목',
+    '금요일반': '금',
+    '토요일반': '토',
+    '일요일반': '일'
+  };
+  return shortNames[className] || className?.replace('요일반', '') || '미배정';
+};
+
 const getClassColor = (className) => {
   const colors = {
     '월요일반': '#ef4444',    // 빨간색
