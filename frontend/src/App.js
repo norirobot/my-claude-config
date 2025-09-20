@@ -1781,23 +1781,66 @@ const CodingMentoringPlatform = () => {
       console.error('🚨 소켓 연결 오류:', error);
     });
 
-    // 주기적으로 소켓 연결 상태 체크 및 테스트
-    const connectionCheckInterval = setInterval(() => {
-      console.log('🔍 소켓 상태 체크:', {
+    // 자동 재연결 시스템 - 소켓 재연결 시 상태 동기화
+    socket.on('reconnect', () => {
+      console.log('🔄 소켓 재연결됨 - 상태 동기화 시작');
+      if (userType === 'student' && user?.id) {
+        console.log('🔄 학생 상태 동기화');
+        socket.emit('syncStudentStatus', {
+          studentId: user.id,
+          studentName: user.name,
+          timestamp: new Date().toISOString()
+        });
+      } else if (userType === 'admin' && user?.id) {
+        console.log('🔄 관리자 - 전체 학생 상태 동기화');
+        socket.emit('syncAllStudentStatus', {
+          adminId: user.id,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+
+    // 하트비트 시스템 - 학생 상태 자동 확인 및 동기화
+    const heartbeatInterval = setInterval(() => {
+      console.log('💓 하트비트 체크:', {
         connected: socket.connected,
         timestamp: new Date().toISOString(),
         userType,
         userId: user?.id
       });
-      
-      // 소켓이 연결되어 있으면 테스트 이벤트 전송
+
+      // 소켓이 연결되어 있으면 하트비트 및 상태 동기화
       if (socket.connected && user?.id) {
-        console.log('🧪 소켓 연결 테스트 메시지 전송');
-        socket.emit('connectionTest', { 
-          userId: user.id, 
-          userType, 
-          timestamp: new Date().toISOString() 
+        // 학생인 경우 하트비트 전송
+        if (userType === 'student') {
+          console.log('💓 학생 하트비트 전송');
+          socket.emit('studentHeartbeat', {
+            studentId: user.id,
+            studentName: user.name,
+            timestamp: new Date().toISOString(),
+            lastActivity: new Date().toISOString()
+          });
+        }
+
+        // 관리자인 경우 학생 상태 동기화 요청
+        if (userType === 'admin') {
+          console.log('🔄 관리자 - 학생 상태 동기화 요청');
+          socket.emit('syncAllStudentStatus', {
+            adminId: user.id,
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        // 일반 연결 테스트
+        socket.emit('connectionTest', {
+          userId: user.id,
+          userType,
+          timestamp: new Date().toISOString()
         });
+      } else if (!socket.connected) {
+        console.log('🔌 소켓 연결이 끊어짐 - 재연결 시도');
+        // 소켓 재연결 시도
+        socket.connect();
       }
     }, 30000); // 30초마다 체크
 
@@ -2169,7 +2212,7 @@ const CodingMentoringPlatform = () => {
       socket.off('studentScreenUpdate');
       socket.off('shareScreenRequest');
       socket.off('allStudentsStatusReset');
-      clearInterval(connectionCheckInterval);
+      clearInterval(heartbeatInterval);
     };
   }, [selectedStudent, userType, currentLesson]);
 
@@ -4601,41 +4644,6 @@ const AdminDashboard = ({
           >
             <span style={{ fontSize: '22px' }}>➕</span>
           </button>
-          {resetAllStudentStatus && (
-            <button
-              onClick={resetAllStudentStatus}
-              title="모든 학생 상태 초기화"
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                height: '36px',
-                minWidth: '100px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#b91c1c';
-                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-                e.target.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#dc2626';
-                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-                e.target.style.transform = 'translateY(0)';
-              }}
-            >
-              <span style={{ fontSize: '20px' }}>🔄</span>
-            </button>
-          )}
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

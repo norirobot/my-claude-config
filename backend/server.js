@@ -2782,6 +2782,87 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('studentCodeChange', codeData);
   });
 
+  // 하트비트 시스템 - 학생 상태 자동 확인
+  socket.on('studentHeartbeat', (heartbeatData) => {
+    console.log('💓 학생 하트비트 수신:', heartbeatData);
+
+    // connectedStudents Set에 학생 추가 (중복 방지)
+    connectedStudents.add(heartbeatData.studentId);
+
+    // 데이터베이스에서 학생 상태를 online으로 업데이트
+    db.run('UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id = ?',
+      ['online', heartbeatData.studentId], (err) => {
+        if (err) {
+          console.error('하트비트 상태 업데이트 실패:', err.message);
+        } else {
+          console.log(`💓 학생 ${heartbeatData.studentId} 하트비트 업데이트 완료`);
+
+          // 모든 관리자에게 학생 상태 업데이트 브로드캐스트
+          socket.broadcast.emit('studentStatusUpdated', {
+            studentId: heartbeatData.studentId,
+            status: 'online',
+            lastActivity: new Date().toISOString(),
+            source: 'heartbeat'
+          });
+        }
+      });
+  });
+
+  // 학생 상태 동기화 (개별)
+  socket.on('syncStudentStatus', (syncData) => {
+    console.log('🔄 학생 상태 동기화 요청:', syncData);
+
+    // connectedStudents Set에 학생 추가
+    connectedStudents.add(syncData.studentId);
+
+    // 데이터베이스 상태 업데이트
+    db.run('UPDATE students SET status = ?, lastActive = CURRENT_TIMESTAMP WHERE id = ?',
+      ['online', syncData.studentId], (err) => {
+        if (err) {
+          console.error('학생 상태 동기화 실패:', err.message);
+        } else {
+          console.log(`🔄 학생 ${syncData.studentId} 상태 동기화 완료`);
+
+          // 관리자에게 상태 업데이트 브로드캐스트
+          socket.broadcast.emit('studentStatusUpdated', {
+            studentId: syncData.studentId,
+            status: 'online',
+            lastActivity: new Date().toISOString(),
+            source: 'sync'
+          });
+        }
+      });
+  });
+
+  // 전체 학생 상태 동기화 (관리자용)
+  socket.on('syncAllStudentStatus', (syncData) => {
+    console.log('🔄 전체 학생 상태 동기화 요청:', syncData);
+
+    // 현재 연결된 학생들의 상태를 확인하고 동기화
+    const onlineStudentIds = Array.from(connectedStudents);
+
+    if (onlineStudentIds.length > 0) {
+      // 연결된 학생들을 online으로 업데이트
+      const placeholders = onlineStudentIds.map(() => '?').join(',');
+      db.run(`UPDATE students SET status = 'online', lastActive = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`,
+        onlineStudentIds, (err) => {
+          if (err) {
+            console.error('전체 학생 상태 동기화 실패:', err.message);
+          } else {
+            console.log('🔄 전체 학생 상태 동기화 완료:', onlineStudentIds);
+
+            // 관리자에게 동기화 결과 브로드캐스트
+            socket.emit('allStudentsStatusReset', {
+              onlineStudentIds,
+              timestamp: new Date().toISOString(),
+              message: '학생 상태 동기화 완료',
+              source: 'admin_sync'
+            });
+          }
+        });
+    }
+  });
+
   // 학생 수동 로그아웃 처리
   socket.on('studentLogout', (logoutData) => {
     console.log('🚪 학생 수동 로그아웃 처리:', logoutData);
@@ -2933,6 +3014,55 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// 주기적 정리 시스템 - 비활성 연결 정리 (10분마다)
+setInterval(() => {
+  console.log('🧹 비활성 연결 정리 시작');
+
+  // 현재 시간에서 10분 전 계산
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+  // 10분 이상 비활성 학생들을 offline으로 변경
+  db.run(`
+    UPDATE students
+    SET status = 'offline'
+    WHERE status = 'online'
+    AND (lastActive IS NULL OR lastActive < ?)
+  `, [tenMinutesAgo.toISOString()], function(err) {
+    if (err) {
+      console.error('❌ 비활성 학생 정리 실패:', err.message);
+    } else if (this.changes > 0) {
+      console.log(`🧹 ${this.changes}명의 비활성 학생을 offline으로 변경`);
+
+      // 변경된 학생들의 ID 조회 후 브로드캐스트
+      db.all(`
+        SELECT id FROM students
+        WHERE status = 'offline'
+        AND (lastActive IS NULL OR lastActive < ?)
+      `, [tenMinutesAgo.toISOString()], (err, rows) => {
+        if (!err && rows.length > 0) {
+          rows.forEach(row => {
+            // connectedStudents Set에서도 제거
+            connectedStudents.delete(row.id);
+
+            // 모든 클라이언트에게 상태 변경 브로드캐스트
+            io.emit('studentStatusUpdated', {
+              studentId: row.id,
+              status: 'offline',
+              source: 'cleanup'
+            });
+          });
+          console.log('📡 비활성 학생 상태 변경 브로드캐스트 완료');
+        }
+      });
+    } else {
+      console.log('✅ 정리할 비활성 학생이 없음');
+    }
+  });
+
+  console.log('📊 현재 연결된 학생 수:', connectedStudents.size);
+  console.log('👥 연결된 학생 ID들:', Array.from(connectedStudents));
+}, 10 * 60 * 1000); // 10분마다 실행
 
 // 차시 관리 API
 // 모든 차시 조회
