@@ -4503,27 +4503,32 @@ const AdminDashboard = ({
       })()}
     </div>
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr 1fr', gap: '24px' }}>
     {/* 학생 목록 */}
     <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
       
       <div style={{ marginBottom: '16px' }}>
-        {/* 클래스 필터 드롭다운 */}
-        <div style={{ marginBottom: '12px' }}>
+        {/* 모든 컨트롤을 같은 라인에 배치 */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
+              padding: '0 12px',
+              borderRadius: '6px',
               border: '2px solid #d1d5db',
-              fontSize: '16px',
+              fontSize: '14px',
               fontWeight: '500',
               backgroundColor: 'white',
               color: '#374151',
               cursor: 'pointer',
               outline: 'none',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              height: '40px',
+              flex: '1',
+              marginRight: '60px',
+              display: 'flex',
+              alignItems: 'center'
             }}
             onFocus={(e) => {
               e.target.style.borderColor = '#3b82f6';
@@ -4539,92 +4544,21 @@ const AdminDashboard = ({
               </option>
             ))}
           </select>
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setSortBy('name')}
-            title="가나다순 정렬"
-            style={{
-              padding: '8px 16px',
-              backgroundColor: sortBy === 'name' ? '#1f2937' : '#f8fafc',
-              color: sortBy === 'name' ? 'white' : '#374151',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              height: '36px',
-              minWidth: '100px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-            }}
-            onMouseEnter={(e) => {
-              if (sortBy !== 'name') {
-                e.target.style.backgroundColor = '#e2e8f0';
-                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (sortBy !== 'name') {
-                e.target.style.backgroundColor = '#f8fafc';
-                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              }
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>🔤</span>
-          </button>
-          <button
-            onClick={() => setSortBy('studentId')}
-            title="학번순 정렬"
-            style={{
-              padding: '8px 16px',
-              backgroundColor: sortBy === 'studentId' ? '#1f2937' : '#f8fafc',
-              color: sortBy === 'studentId' ? 'white' : '#374151',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              height: '36px',
-              minWidth: '100px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-            }}
-            onMouseEnter={(e) => {
-              if (sortBy !== 'studentId') {
-                e.target.style.backgroundColor = '#e2e8f0';
-                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (sortBy !== 'studentId') {
-                e.target.style.backgroundColor = '#f8fafc';
-                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              }
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>🔢</span>
-          </button>
+
           <button
             onClick={onAddStudent}
             title="새 학생 추가"
             style={{
-              padding: '8px 16px',
+              padding: '0',
               backgroundColor: '#059669',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '12px',
               fontWeight: '500',
               height: '36px',
-              minWidth: '100px',
+              width: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -4642,8 +4576,37 @@ const AdminDashboard = ({
               e.target.style.transform = 'translateY(0)';
             }}
           >
-            <span style={{ fontSize: '22px' }}>➕</span>
+            <span style={{ fontSize: '20px' }}>➕</span>
           </button>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: '0 12px',
+              borderRadius: '6px',
+              border: '2px solid #d1d5db',
+              fontSize: '14px',
+              fontWeight: '500',
+              backgroundColor: 'white',
+              color: '#374151',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'all 0.2s',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#3b82f6';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#d1d5db';
+            }}
+          >
+            <option value="name">🔤 가나다순</option>
+            <option value="studentId">🔢 학번순</option>
+          </select>
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
