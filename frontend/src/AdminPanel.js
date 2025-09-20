@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AnalyticsPanel from './AnalyticsPanel';
 
 const AdminPanel = ({ user, studentScreens = {}, onRequestStudentScreen }) => {
   // 🐛 DEBUG: studentScreens prop 변경 감지
@@ -536,10 +537,24 @@ const AdminPanel = ({ user, studentScreens = {}, onRequestStudentScreen }) => {
         >
           통계
         </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            backgroundColor: activeTab === 'analytics' ? '#4CAF50' : 'transparent',
+            color: activeTab === 'analytics' ? 'white' : '#666',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'analytics' ? '2px solid #4CAF50' : 'none'
+          }}
+        >
+          📊 학습 분석
+        </button>
       </div>
 
       {activeTab === 'students' && renderStudentsTab()}
       {activeTab === 'statistics' && renderStatisticsTab()}
+      {activeTab === 'analytics' && <AnalyticsPanel />}
     </div>
   );
 };

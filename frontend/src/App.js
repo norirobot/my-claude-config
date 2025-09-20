@@ -6,6 +6,7 @@ import Editor from '@monaco-editor/react';
 import Login from './Login';
 import AdminPanel from './AdminPanel';
 import StudentDashboard from './StudentDashboard';
+import AnalyticsPanel from './AnalyticsPanel';
 
 // 자동 네트워크 감지 시스템
 const getApiBaseUrl = () => {
@@ -3680,6 +3681,20 @@ const CodingMentoringPlatform = () => {
                   >
                     👁️ 학생 뷰
                   </button>
+                  <button
+                    onClick={() => setCurrentTab('analytics')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: currentTab === 'analytics' ? '#2563eb' : '#f3f4f6',
+                      color: currentTab === 'analytics' ? 'white' : '#374151',
+                      cursor: 'pointer',
+                      fontSize: '16px'
+                    }}
+                  >
+                    📊 학습 분석
+                  </button>
                 </>
               )}
               {userType === 'student' && (
@@ -3828,7 +3843,7 @@ const CodingMentoringPlatform = () => {
           />
         ) : userType === 'admin' && currentTab === 'problems' ? (
           /* 문제 관리 */
-          <ProblemManagement 
+          <ProblemManagement
             problems={problems}
             currentLesson={currentLesson}
             onLessonChange={(lesson) => {
@@ -3848,6 +3863,9 @@ const CodingMentoringPlatform = () => {
             onEditLesson={editLesson}
             onDeleteLesson={deleteLesson}
           />
+        ) : userType === 'admin' && currentTab === 'analytics' ? (
+          /* 학습 분석 */
+          <AnalyticsPanel />
         ) : (
           /* 학생 뷰 */
           <StudentView 
@@ -4229,6 +4247,68 @@ const AdminDashboard = ({
   showScreenShare, setShowScreenShare, resetAllStudentStatus
 }) => {
 
+  // 🔄 실시간 상태 아이콘 함수 (Phase 1)
+  const getActivityStatusIcon = (student) => {
+    const now = Date.now();
+    const lastActivity = student.lastActivity ? new Date(student.lastActivity).getTime() : 0;
+    const timeDiff = now - lastActivity;
+
+    // 기존 상태 우선 처리
+    if (student.needsHelp === 1) return '🔴'; // 도움 필요
+    if (student.status === 'completed') return '✅'; // 완료
+    if (student.status === 'stuck') return '🟡'; // 막힘
+
+    // 활동 기반 상태
+    if (timeDiff < 2 * 60 * 1000) return '🟢'; // 2분 이내 활성
+    if (timeDiff < 10 * 60 * 1000) return '🔵'; // 10분 이내 진행중
+    return '⚪'; // 비활성
+  };
+
+  // 상태별 툴팁 텍스트
+  const getStatusTooltip = (student) => {
+    if (student.needsHelp === 1) return '도움 요청 중';
+    if (student.status === 'completed') return '문제 완료';
+    if (student.status === 'stuck') return '진행 막힘';
+
+    const now = Date.now();
+    const lastActivity = student.lastActivity ? new Date(student.lastActivity).getTime() : 0;
+    const timeDiff = now - lastActivity;
+    const minutes = Math.floor(timeDiff / (60 * 1000));
+
+    if (timeDiff < 2 * 60 * 1000) return '활발히 활동 중';
+    if (timeDiff < 10 * 60 * 1000) return `${minutes}분 전 활동`;
+    return `${minutes}분 이상 비활성`;
+  };
+
+  // 🔄 Phase 2: 클래스 현황 통계 계산
+  const getClassSummary = () => {
+    const summary = {
+      needHelp: 0,      // 🔴 도움 필요
+      completed: 0,     // ✅ 완료
+      stuck: 0,         // 🟡 막힘
+      active: 0,        // 🟢 활성
+      working: 0,       // 🔵 진행중
+      inactive: 0       // ⚪ 비활성
+    };
+
+    students.forEach(student => {
+      if (student.needsHelp === 1) summary.needHelp++;
+      else if (student.status === 'completed') summary.completed++;
+      else if (student.status === 'stuck') summary.stuck++;
+      else {
+        const now = Date.now();
+        const lastActivity = student.lastActivity ? new Date(student.lastActivity).getTime() : 0;
+        const timeDiff = now - lastActivity;
+
+        if (timeDiff < 2 * 60 * 1000) summary.active++;
+        else if (timeDiff < 10 * 60 * 1000) summary.working++;
+        else summary.inactive++;
+      }
+    });
+
+    return summary;
+  };
+
   return (
   <div>
     {/* 실시간 도움 요청 표시 영역 */}
@@ -4347,6 +4427,56 @@ const AdminDashboard = ({
       </div>
     )}
 
+    {/* 🔄 Phase 2 개선: 컴팩트한 클래스 현황 바 */}
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      padding: '12px 16px',
+      marginBottom: '16px',
+      border: '1px solid #e5e7eb',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '16px',
+      flexWrap: 'wrap'
+    }}>
+      <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+        🔄 클래스 현황:
+      </span>
+
+      {(() => {
+        const summary = getClassSummary();
+        const statusItems = [];
+
+        if (summary.needHelp > 0) statusItems.push(`🔴 ${summary.needHelp}명`);
+        if (summary.completed > 0) statusItems.push(`✅ ${summary.completed}명`);
+        if (summary.stuck > 0) statusItems.push(`🟡 ${summary.stuck}명`);
+        if (summary.active > 0) statusItems.push(`🟢 ${summary.active}명`);
+        if (summary.working > 0) statusItems.push(`🔵 ${summary.working}명`);
+        if (summary.inactive > 0) statusItems.push(`⚪ ${summary.inactive}명`);
+
+        return (
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {statusItems.map((item, index) => (
+              <span
+                key={index}
+                style={{
+                  fontSize: '14px',
+                  color: '#374151',
+                  backgroundColor: '#f9fafb',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #e5e7eb'
+                }}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
+    </div>
+
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1fr', gap: '24px' }}>
     {/* 학생 목록 */}
     <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
@@ -4462,15 +4592,16 @@ const AdminDashboard = ({
                     {index + 1}
                   </span>
                   <span style={{ fontWeight: '500', fontSize: '16px' }}>{student.name}</span>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: student.status === 'online' ? '#10b981' : 
-                                   student.status === 'stuck' ? '#ef4444' : '#6b7280'
-                  }} />
-                  {student.needsHelp === 1 && <span style={{ color: '#ef4444' }}>🚨</span>}
-                  {student.status === 'completed' && <span style={{ color: '#10b981' }}>✅</span>}
+                  {/* 🔄 Phase 1: 통합 실시간 상태 아이콘 */}
+                  <span
+                    style={{
+                      fontSize: '18px',
+                      cursor: 'help'
+                    }}
+                    title={getStatusTooltip(student)}
+                  >
+                    {getActivityStatusIcon(student)}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button

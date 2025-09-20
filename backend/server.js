@@ -3373,9 +3373,86 @@ app.post('/api/hint-request-with-analysis', (req, res) => {
   stmt.finalize();
 });
 
+// ========================================
+// 📊 학습 분석 API (Phase 1.1)
+// ========================================
+
+// 학생별 학습 활동 분석 데이터 조회
+app.get('/api/analytics/student/:studentId', (req, res) => {
+  const { studentId } = req.params;
+  console.log(`📊 학생 ${studentId}의 학습 분석 데이터 요청`);
+
+  // 학습 활동 데이터 조회
+  const query = `SELECT
+    activity_type,
+    problem_id,
+    duration,
+    data,
+    timestamp,
+    created_at
+  FROM learning_analytics
+  WHERE student_id = ?
+  ORDER BY created_at DESC
+  LIMIT 50`;
+
+  db.all(query, [studentId], (err, activities) => {
+    if (err) {
+      console.error('❌ 학습 분석 조회 실패:', err.message);
+      return res.status(500).json({ error: '학습 분석 데이터 조회 실패' });
+    }
+
+    // 활동 타입별 통계 계산
+    const stats = {
+      total_activities: activities.length,
+      login_count: activities.filter(a => a.activity_type === 'login').length,
+      problems_viewed: activities.filter(a => a.activity_type === 'problem_view').length,
+      code_submissions: activities.filter(a => a.activity_type === 'code_submit').length,
+      total_coding_time: activities
+        .filter(a => a.duration)
+        .reduce((sum, a) => sum + (a.duration || 0), 0)
+    };
+
+    console.log(`✅ 학생 ${studentId} 분석 완료: ${stats.total_activities}개 활동`);
+
+    res.json({
+      success: true,
+      student_id: studentId,
+      statistics: stats,
+      recent_activities: activities.slice(0, 10),
+      all_activities: activities
+    });
+  });
+});
+
+// 활동 추적 기록 API
+app.post('/api/analytics/track', (req, res) => {
+  const { student_id, activity_type, problem_id, duration, data } = req.body;
+
+  console.log(`📝 활동 추적: 학생 ${student_id} - ${activity_type}`);
+
+  const query = `INSERT INTO learning_analytics (student_id, activity_type, problem_id, duration, data) VALUES (?, ?, ?, ?, ?)`;
+
+  db.run(query, [student_id, activity_type, problem_id || null, duration || null, JSON.stringify(data) || null], function(err) {
+    if (err) {
+      console.error('❌ 활동 추적 기록 실패:', err.message);
+      return res.status(500).json({ error: '활동 추적 실패' });
+    }
+
+    console.log(`✅ 활동 기록됨: ID ${this.lastID}`);
+    res.json({
+      success: true,
+      activity_id: this.lastID,
+      message: '활동이 기록되었습니다'
+    });
+  });
+});
+
+// ========================================
+
 const PORT = process.env.PORT || 3008;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`네트워크 접근이 가능합니다: http://192.168.68.59:${PORT}`);
   console.log('요일별 반 관리 기능이 활성화되었습니다.');
+  console.log('📊 학습 분석 API가 활성화되었습니다.');
 });
