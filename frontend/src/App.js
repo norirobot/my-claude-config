@@ -3738,68 +3738,6 @@ const CodingMentoringPlatform = () => {
             </div>
           </div>
           
-          {/* 반별 통계 (멘토뷰에서만) - 클릭 가능한 버튼 */}
-          {userType === 'admin' && currentTab === 'mentor' && (
-            <div style={{ marginTop: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              {Object.entries(classStats).map(([className, count]) => (
-                <button 
-                  key={className} 
-                  onClick={() => setSelectedClass(className)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: selectedClass === className ? getClassColor(className) : '#f3f4f6',
-                    borderRadius: '20px',
-                    fontSize: '16px',
-                    color: selectedClass === className ? 'white' : '#374151',
-                    fontWeight: selectedClass === className ? '600' : '500',
-                    border: selectedClass === className ? `2px solid ${getClassColor(className)}` : '2px solid #d1d5db',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    outline: 'none'
-                  }}
-                  onMouseOver={(e) => {
-                    if (selectedClass !== className) {
-                      e.target.style.backgroundColor = '#e5e7eb';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (selectedClass !== className) {
-                      e.target.style.backgroundColor = '#f3f4f6';
-                    }
-                  }}
-                >
-                  {className}: {count}명
-                </button>
-              ))}
-              <button 
-                onClick={() => setSelectedClass('전체')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: selectedClass === '전체' ? '#374151' : '#f3f4f6',
-                  borderRadius: '20px',
-                  fontSize: '16px',
-                  color: selectedClass === '전체' ? 'white' : '#374151',
-                  fontWeight: selectedClass === '전체' ? '600' : '500',
-                  border: selectedClass === '전체' ? '2px solid #374151' : '2px solid #d1d5db',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }}
-                onMouseOver={(e) => {
-                  if (selectedClass !== '전체') {
-                    e.target.style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (selectedClass !== '전체') {
-                    e.target.style.backgroundColor = '#f3f4f6';
-                  }
-                }}
-              >
-                전체: {allStudents.length}명
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -4527,9 +4465,38 @@ const AdminDashboard = ({
     <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '24px' }}>
       
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: '600', margin: '0 0 12px 0' }}>
-          📊 전체학생현황 ({students.length}명)
-        </h2>
+        {/* 클래스 필터 드롭다운 */}
+        <div style={{ marginBottom: '12px' }}>
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '2px solid #d1d5db',
+              fontSize: '16px',
+              fontWeight: '500',
+              backgroundColor: 'white',
+              color: '#374151',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'all 0.2s'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#3b82f6';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#d1d5db';
+            }}
+          >
+            <option value="전체">전체 ({students.length}명)</option>
+            {classOptions.slice(1).map(className => (
+              <option key={className} value={className}>
+                {className} ({students.filter(s => s.class === className).length}명)
+              </option>
+            ))}
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setSortBy('name')}
